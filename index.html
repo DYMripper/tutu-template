@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>荼荼 · 模板目录</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root{
+    --paper:#F1ECE1;
+    --paper-deep:#E8E1D2;
+    --ink:#1C1813;
+    --ink-soft:#5B5448;
+    --accent:#C8472B;
+    --accent-soft:#E7C77B;
+    --line:#CFC6B3;
+    --card-shadow: 0 1px 0 rgba(28,24,19,.06);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Archivo',sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+  }
+
+  /* texture */
+  body::before{
+    content:"";
+    position:fixed; inset:0;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(28,24,19,.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:0 28px;}
+
+  /* ===== Header ===== */
+  header{
+    padding:38px 0 26px;
+    border-bottom:3px solid var(--ink);
+  }
+  .brand-row{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
+  }
+  .brand{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(34px,5vw,54px);
+    line-height:.92;
+    letter-spacing:-.01em;
+  }
+  .brand span{color:var(--accent);}
+  .meta{
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+    color:var(--ink-soft);
+    text-align:right;
+    line-height:1.7;
+    letter-spacing:.02em;
+  }
+  .tagline{
+    margin-top:10px;
+    font-size:15px;
+    color:var(--ink-soft);
+    max-width:520px;
+  }
+
+  /* breadcrumb / back */
+  .crumb{
+    margin-top:22px;
+    display:none;
+    align-items:center;
+    gap:10px;
+    font-family:'Space Mono',monospace;
+    font-size:13px;
+  }
+  .crumb.show{display:flex;}
+  .back-btn{
+    appearance:none; border:1.5px solid var(--ink); background:transparent;
+    color:var(--ink); font-family:'Space Mono',monospace; font-size:13px;
+    padding:7px 14px; border-radius:100px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:background .15s ease, color .15s ease;
+  }
+  .back-btn:hover{background:var(--ink); color:var(--paper);}
+  .crumb .sep{color:var(--ink-soft);}
+  .crumb .current{color:var(--accent); font-weight:700;}
+
+  main{padding:46px 0 90px;}
+
+  /* ===== HOME: category grid ===== */
+  #home-view .section-label{
+    font-family:'Space Mono',monospace;
+    font-size:12.5px;
+    letter-spacing:.12em;
+    color:var(--ink-soft);
+    text-transform:uppercase;
+    margin-bottom:22px;
+    display:flex; align-items:center; gap:10px;
+  }
+  #home-view .section-label::after{
+    content:""; flex:1; height:1px; background:var(--line);
+  }
+
+  .cat-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:26px;
+  }
+
+  .cat-card{
+    position:relative;
+    cursor:pointer;
+    border:none;
+    background:none;
+    padding:0;
+    text-align:left;
+    font-family:inherit;
+    outline-offset:4px;
+  }
+  .stack{
+    position:relative;
+    height:230px;
+  }
+  .stack .leaf{
+    position:absolute; inset:0;
+    border-radius:3px;
+    border:1.5px solid rgba(28,24,19,.18);
+    box-shadow:var(--card-shadow);
+    transition:transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s ease;
+  }
+  .stack .leaf:nth-child(1){ transform:rotate(-3.5deg) translate(-4px,4px); background:var(--paper-deep); }
+  .stack .leaf:nth-child(2){ transform:rotate(2.5deg) translate(3px,2px); background:#DFD7C3; }
+  .stack .leaf:nth-child(3){
+    transform:rotate(0deg);
+    background:var(--ink);
+    display:flex; flex-direction:column; justify-content:space-between;
+    padding:18px;
+    overflow:hidden;
+  }
+  .cat-card:hover .stack .leaf:nth-child(1){ transform:rotate(-7deg) translate(-9px,8px); }
+  .cat-card:hover .stack .leaf:nth-child(2){ transform:rotate(5deg) translate(7px,5px); }
+  .cat-card:hover .stack .leaf:nth-child(3){ box-shadow:0 10px 24px rgba(28,24,19,.22); }
+
+  .stack .leaf:nth-child(3) .top-row{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    font-family:'Space Mono',monospace; color:rgba(241,236,225,.55); font-size:12px;
+  }
+  .cat-name{
+    color:var(--paper);
+    font-family:'Archivo Black',sans-serif;
+    font-size:21px;
+    line-height:1.15;
+  }
+  .cat-count{
+    margin-top:10px;
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    display:flex; justify-content:space-between;
+  }
+
+  .cat-card:focus-visible .stack .leaf:nth-child(3){ outline:3px solid var(--accent); outline-offset:2px; }
+
+  /* ===== CATEGORY VIEW: poster grid ===== */
+  #category-view{display:none;}
+  #category-view.show{display:block;}
+  #home-view.hide{display:none;}
+
+  .cat-header{
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px;
+    margin-bottom:30px;
+  }
+  .cat-header h2{
+    font-family:'Archivo Black',sans-serif;
+    font-size:clamp(26px,4vw,38px);
+    margin:0;
+  }
+  .cat-header .count{
+    font-family:'Space Mono',monospace;
+    color:var(--ink-soft);
+    font-size:13px;
+  }
+
+  .poster-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:30px 24px;
+  }
+
+  .poster-card{
+    cursor:zoom-in;
+    border:none; background:none; padding:0; text-align:left; font-family:inherit;
+    outline-offset:4px;
+  }
+  .poster-thumb{
+    position:relative;
+    border-radius:2px;
+    border:1.5px solid rgba(28,24,19,.18);
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(28,24,19,.08);
+    transition:transform .22s ease, box-shadow .22s ease;
+    background-size:cover; background-position:center;
+  }
+  .poster-card:hover .poster-thumb{
+    transform:translateY(-5px);
+    box-shadow:0 14px 26px rgba(28,24,19,.22);
+  }
+  .poster-thumb .tag{
+    position:absolute; top:9px; left:9px;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Space Mono',monospace;
+    font-size:11px;
+    letter-spacing:.04em;
+    padding:3px 8px;
+    border-radius:2px;
+    z-index: 2;
+  }
+  .poster-thumb .center-mark{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Archivo Black',sans-serif;
+    font-size:15px;
+    color:rgba(255,255,255,.85);
+    text-align:center;
+    padding:14px;
+    mix-blend-mode:overlay;
+  }
+  .poster-meta{
+    margin-top:9px;
+    display:flex; justify-content:space-between;
+    font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft);
+  }
+
+  /* ===== Lightbox ===== */
+  .lightbox{
+    position:fixed; inset:0; z-index:50;
+    background:rgba(20,17,13,.92);
+    display:none;
+    align-items:center; justify-content:center;
+    padding:40px;
+  }
+  .lightbox.show{display:flex;}
+  .lightbox-inner{
+    max-width:min(720px,90vw); /* 放大横屏视频时，放宽最大宽度保证视觉体验 */
+    width:100%;
+  }
+  .lightbox-img{
+    width:100%;
+    border-radius:3px;
+    background-size:cover; background-position:center;
+    box-shadow:0 30px 60px rgba(0,0,0,.5);
+    position:relative;
+    transition: aspect-ratio 0.2s ease;
+  }
+  .lightbox-img .center-mark{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Archivo Black',sans-serif;
+    font-size:22px; color:rgba(255,255,255,.85);
+    text-align:center; padding:20px;
+    mix-blend-mode:overlay;
+  }
+  .lightbox-cap{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:16px;
+    font-family:'Space Mono',monospace;
+    color:var(--paper);
+    font-size:13px;
+  }
+  .lightbox-close{
+    appearance:none; border:1.5px solid var(--paper); background:transparent;
+    color:var(--paper); border-radius:100px; width:34px; height:34px;
+    cursor:pointer; font-size:16px; line-height:1;
+    position:absolute; top:24px; right:28px;
+    display:flex; align-items:center; justify-content:center;
+    transition:background .15s ease, color .15s ease;
+  }
+  .lightbox-close:hover{background:var(--paper); color:var(--ink);}
+
+  footer{
+    border-top:1.5px solid var(--line);
+    padding:22px 0 40px;
+    font-family:'Space Mono',monospace;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:center;
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="brand-row">
+      <div class="brand">荼荼 <span>Tútú</span></div>
+      <div class="meta">模板目录 · TEMPLATE CATALOG<br>持续更新中 — UPDATED REGULARLY</div>
+    </div>
+    <p class="tagline">挑选一个分类，浏览全部模板，点击任意一张即可放大查看细节。</p>
+    <div class="crumb" id="crumb">
+      <button class="back-btn" id="backBtn">← 返回全部分类</button>
+      <span class="sep">/</span>
+      <span class="current" id="crumbCurrent"></span>
+    </div>
+  </header>
+
+  <main>
+    <section id="home-view">
+      <div class="section-label">选择分类 · Categories</div>
+      <div class="cat-grid" id="catGrid"></div>
+    </section>
+
+    <section id="category-view">
+      <div class="cat-header">
+        <h2 id="catTitle"></h2>
+        <span class="count" id="catCount"></span>
+      </div>
+      <div class="poster-grid" id="posterGrid"></div>
+    </section>
+  </main>
+
+  <footer>© <span id="year"></span> 荼荼工作室 · 仅供客户在线挑选模板使用</footer>
+</div>
+
+<div class="lightbox" id="lightbox">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <div class="lightbox-inner">
+    <div class="lightbox-img" id="lightboxImg"><div class="center-mark" id="lightboxMark"></div></div>
+    <div class="lightbox-cap">
+      <span id="lightboxCode"></span>
+      <span id="lightboxCatName"></span>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   数据区：以后新增分类 / 模板，只需要在这里改这个对象即可。
+   ----------------------------------------------------------
+   每个分类(category)：
+     key      —— 唯一标识（英文/拼音，不要重复）
+     name     —— 显示在网站上的分类名称
+     items    —— 该分类下的模板数组
+
+   每个模板(item)：
+     code     —— 编号，例如 "PST-001"（会显示在卡片和放大图上）
+     image    —— 模板图片地址。换成你自己的图片 URL 即可。
+     color    —— 占位色块的颜色（没有图片时使用），可选
+     ratio    —— 【新增】比例控制，例如 "16/9"、"1"、"4/3"、"3/4"，不加默认是竖版 3/4
+   ============================================================ */
+  const DATA = [
+    {
+      key:"poster",
+      name:"海报模板",
+      image:"./海报模板.jpg",
+      items:[
+        {code:"PST-001", image:"./海报模板.jpg", color:"#C8472B"},
+        {code:"PST-002", image:"./海报模板.jpg", color:"#3F5D52"},
+        {code:"PST-003", image:"./海报模板.jpg", color:"#2B3A67"},
+        {code:"PST-004", image:"./海报模板.jpg", color:"#9C6B30"},
+        {code:"PST-005", image:"./海报模板.jpg", color:"#6E3B5C"},
+        {code:"PST-006", image:"./海报模板.jpg", color:"#1C1813"},
+      ]
+    },
+    {
+      key:"video",
+      name:"视频模板",
+      image:"./视频模板.webp",
+      items:[
+        {code:"VID-001", image:"./视频模板.webp", color:"#2B3A67", ratio: "16/9"},
+        {code:"VID-002", image:"./视频模板.webp", color:"#C8472B", ratio: "16/9"},
+        {code:"VID-003", image:"./视频模板.webp", color:"#3F5D52", ratio: "16/9"},
+        {code:"VID-004", image:"./视频模板.webp", color:"#9C6B30", ratio: "16/9"},
+      ]
+    },
+    {
+      key:"playlist-motion",
+      name:"动态歌单背景",
+      image:"./动态歌单模板.webp",
+      items:[
+        {code:"MPL-001", image:"./动态歌单模板.webp", color:"#6E3B5C"},
+        {code:"MPL-002", image:"./动态歌单模板.webp", color:"#1C1813"},
+        {code:"MPL-003", image:"./动态歌单模板.webp", color:"#C8472B"},
+        {code:"MPL-004", image:"./动态歌单模板.webp", color:"#3F5D52"},
+        {code:"MPL-005", image:"./动态歌单模板.webp", color:"#2B3A67"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"静态歌单背景",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+  ];
+/* ============================================================ */
+
+const homeView = document.getElementById('home-view');
+const categoryView = document.getElementById('category-view');
+const catGrid = document.getElementById('catGrid');
+const posterGrid = document.getElementById('posterGrid');
+const catTitle = document.getElementById('catTitle');
+const catCount = document.getElementById('catCount');
+const crumb = document.getElementById('crumb');
+const crumbCurrent = document.getElementById('crumbCurrent');
+const backBtn = document.getElementById('backBtn');
+
+const lightbox = document.getElementById('lightbox');
+const lightboxImg = document.getElementById('lightboxImg');
+const lightboxMark = document.getElementById('lightboxMark');
+const lightboxCode = document.getElementById('lightboxCode');
+const lightboxCatName = document.getElementById('lightboxCatName');
+const lightboxClose = document.getElementById('lightboxClose');
+
+document.getElementById('year').textContent = new Date().getFullYear();
+
+function renderHome(){
+  catGrid.innerHTML = '';
+  DATA.forEach(cat=>{
+    const card = document.createElement('button');
+    card.className = 'cat-card';
+    card.setAttribute('aria-label', '查看' + cat.name);
+    
+    // 首页保持原本精美的纸张层叠特效，封面图用 cover 完美裁剪裁剪自适应
+    const leafBg = cat.image ? `background-image:url('${cat.image}'); background-size:cover; background-position:center;` : '';
+    const maskStyle = cat.image ? `background:rgba(28,24,19,.65); width:100%; height:100%; position:absolute; inset:0; padding:18px; display:flex; flex-direction:column; justify-content:space-between;` : `display:flex; flex-direction:column; justify-content:space-between; padding:18px; height:100%;`;
+
+    card.innerHTML = `
+      <div class="stack">
+        <div class="leaf"></div>
+        <div class="leaf"></div>
+        <div class="leaf" style="${leafBg} padding:0; overflow:hidden;">
+          <div style="${maskStyle}">
+            <div class="top-row"><span>CATALOG</span><span>${String(cat.items.length).padStart(2,'0')}</span></div>
+            <div>
+              <div class="cat-name">${cat.name}</div>
+              <div class="cat-count" style="${cat.image ? 'color:rgba(241,236,225,.8)' : ''}"><span>共 ${cat.items.length} 款</span><span>查看 →</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+    card.addEventListener('click', ()=>openCategory(cat.key));
+    catGrid.appendChild(card);
+  });
+}
+
+function openCategory(key){
+  const cat = DATA.find(c=>c.key===key);
+  if(!cat) return;
+  catTitle.textContent = cat.name;
+  catCount.textContent = `共 ${cat.items.length} 款模板`;
+  crumbCurrent.textContent = cat.name;
+  crumb.classList.add('show');
+
+  posterGrid.innerHTML = '';
+  cat.items.forEach(item=>{
+    const card = document.createElement('button');
+    card.className = 'poster-card';
+    card.setAttribute('aria-label', `放大查看 ${item.code}`);
+
+    // 计算模板比例样式：如果手动配置了 ratio 就用，否则默认纵向 3/4
+    let itemRatioStyle = item.ratio ? `aspect-ratio: ${item.ratio};` : `aspect-ratio: 3/4;`;
+    const bg = item.image ? `background-image:url('${item.image}'); background-size:cover; background-position:center;` : `background:${item.color}`;
+    
+    card.innerHTML = `
+      <div class="poster-thumb" style="${bg} ${itemRatioStyle}">
+        ${item.image ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
+        <span class="tag">${item.code}</span>
+      </div>
+      <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
+    `;
+    card.addEventListener('click', ()=>openLightbox(cat, item));
+    posterGrid.appendChild(card);
+  });
+
+  homeView.classList.add('hide');
+  categoryView.classList.add('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function closeCategory(){
+  homeView.classList.remove('hide');
+  categoryView.classList.remove('show');
+  crumb.classList.remove('show');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function openLightbox(cat, item){
+  // 放大弹窗也无缝适配模板的 ratio 比例
+  let itemRatioStyle = item.ratio ? `aspect-ratio: ${item.ratio};` : `aspect-ratio: 3/4;`;
+  const bg = item.image ? `background-image:url('${item.image}'); background-size:cover; background-position:center;` : `background:${item.color}`;
+  
+  lightboxImg.setAttribute('style', `${bg} ${itemRatioStyle}`);
+  lightboxMark.textContent = item.image ? '' : `${cat.name} ${item.code}`;
+  lightboxCode.textContent = item.code;
+  lightboxCatName.textContent = cat.name;
+  lightbox.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox(){
+  lightbox.classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+backBtn.addEventListener('click', closeCategory);
+lightboxClose.addEventListener('click', closeLightbox);
+lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLightbox(); });
+document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
+
+renderHome();
+</script>
+
+</body>
+</html>
