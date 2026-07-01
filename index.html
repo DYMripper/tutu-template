@@ -28,7 +28,6 @@
     min-height:100vh;
   }
 
-  /* texture */
   body::before{
     content:"";
     position:fixed; inset:0;
@@ -50,10 +49,14 @@
     display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
   }
   .brand{
+    display:flex; align-items:center; gap:14px;
     font-family:'Archivo Black',sans-serif;
     font-size:clamp(34px,5vw,54px);
     line-height:.92;
     letter-spacing:-.01em;
+  }
+  .brand-logo{
+    height:190px; width:auto; object-fit:contain; display:block; flex-shrink:0;
   }
   .brand span{color:var(--accent);}
   .meta{
@@ -66,12 +69,11 @@
   }
   .tagline{
     margin-top:10px;
-    font-size:15px;
+    font-size:25px;
     color:var(--ink-soft);
-    max-width:520px;
+    max-width:800px;
   }
 
-  /* breadcrumb / back */
   .crumb{
     margin-top:22px;
     display:none;
@@ -94,7 +96,6 @@
 
   main{padding:46px 0 90px;}
 
-  /* ===== HOME: category grid ===== */
   #home-view .section-label{
     font-family:'Space Mono',monospace;
     font-size:12.5px;
@@ -168,7 +169,6 @@
 
   .cat-card:focus-visible .stack .leaf:nth-child(3){ outline:3px solid var(--accent); outline-offset:2px; }
 
-  /* ===== CATEGORY VIEW: poster grid ===== */
   #category-view{display:none;}
   #category-view.show{display:block;}
   #home-view.hide{display:none;}
@@ -239,7 +239,6 @@
     font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft);
   }
 
-  /* ===== Lightbox ===== */
   .lightbox{
     position:fixed; inset:0; z-index:50;
     background:rgba(20,17,13,.92);
@@ -249,7 +248,7 @@
   }
   .lightbox.show{display:flex;}
   .lightbox-inner{
-    max-width:min(720px,90vw); /* 放大横屏视频时，放宽最大宽度保证视觉体验 */
+    max-width:min(720px,90vw);
     width:100%;
   }
   .lightbox-img{
@@ -304,10 +303,10 @@
 <div class="wrap">
   <header>
     <div class="brand-row">
-      <div class="brand">荼荼 <span>Tútú</span></div>
+      <div class="brand" id="brand">荼荼 <span>Tútú</span></div>
       <div class="meta">模板目录 · TEMPLATE CATALOG<br>持续更新中 — UPDATED REGULARLY</div>
     </div>
-    <p class="tagline">挑选一个分类，浏览全部模板，点击任意一张即可放大查看细节。</p>
+    <p class="tagline">🍰歌单｜冠名卡｜拍卖图｜厅图｜等都可定制🌟 <br>一律先付款后出图，按付款顺序出图，24h内出。加急插队双倍~</p>
     <div class="crumb" id="crumb">
       <button class="back-btn" id="backBtn">← 返回全部分类</button>
       <span class="sep">/</span>
@@ -346,67 +345,162 @@
 
 <script>
 /* ============================================================
+   ★ LOGO 配置：把下面的链接换成你自己的图片地址即可。
+      留空（""）时不显示 logo 图片，只显示文字标题。
+   ============================================================ */
+  const LOGO_URL = "微信图片_20260701223501_42605_56.png";   // ← 在引号里填入你的图片 URL
+
+/* ============================================================
    数据区：以后新增分类 / 模板，只需要在这里改这个对象即可。
    ----------------------------------------------------------
    每个分类(category)：
      key      —— 唯一标识（英文/拼音，不要重复）
      name     —— 显示在网站上的分类名称
+     image    —— 分类封面图（显示在首页卡片上）
      items    —— 该分类下的模板数组
 
    每个模板(item)：
      code     —— 编号，例如 "PST-001"（会显示在卡片和放大图上）
      image    —— 模板图片地址。换成你自己的图片 URL 即可。
      color    —— 占位色块的颜色（没有图片时使用），可选
-     ratio    —— 【新增】比例控制，例如 "16/9"、"1"、"4/3"、"3/4"，不加默认是竖版 3/4
+     ratio    —— 比例控制，例如 "16/9"、"1"、"4/3"、"3/4"，不填默认竖版 3/4
    ============================================================ */
   const DATA = [
     {
       key:"poster",
-      name:"海报模板",
-      image:"海报模板.jpg",
+      name:"冠名卡",
+      image:"./海报模板.jpg",
       items:[
-        {code:"PST-001", image:"海报模板/海报模板.jpg", color:"#C8472B"},
-        {code:"PST-002", image:"海报模板/海报模板.jpg", color:"#3F5D52"},
-        {code:"PST-003", image:"海报模板/海报模板.jpg", color:"#2B3A67"},
-        {code:"PST-004", image:"海报模板/海报模板.jpg", color:"#9C6B30"},
-        {code:"PST-005", image:"海报模板/海报模板.jpg", color:"#6E3B5C"},
-        {code:"PST-006", image:"海报模板/海报模板.jpg", color:"#1C1813"},
+        {code:"PST-001", image:"./海报模板.jpg", color:"#C8472B"},
+        {code:"PST-002", image:"./海报模板.jpg", color:"#3F5D52"},
+        {code:"PST-003", image:"./海报模板.jpg", color:"#2B3A67"},
+        {code:"PST-004", image:"./海报模板.jpg", color:"#9C6B30"},
+        {code:"PST-005", image:"./海报模板.jpg", color:"#6E3B5C"},
+        {code:"PST-006", image:"./海报模板.jpg", color:"#1C1813"},
       ]
     },
     {
       key:"video",
-      name:"视频模板",
-      image:"视频模板.webp",
+      name:"闺蜜卡",
+      image:"./视频模板.webp",
       items:[
-        {code:"VID-001", image:"视频卡模板/视频模板.webp", color:"#2B3A67", ratio: "16/9"},
-        {code:"VID-002", image:"视频卡模板/视频模板.webp", color:"#C8472B", ratio: "16/9"},
-        {code:"VID-003", image:"视频卡模板/视频模板.webp", color:"#3F5D52", ratio: "16/9"},
-        {code:"VID-004", image:"视频卡模板/视频模板.webp", color:"#9C6B30", ratio: "16/9"},
+        {code:"VID-001", image:"./视频模板.webp", color:"#2B3A67", ratio:"16/9"},
+        {code:"VID-002", image:"./视频模板.webp", color:"#C8472B", ratio:"16/9"},
+        {code:"VID-003", image:"./视频模板.webp", color:"#3F5D52", ratio:"16/9"},
+        {code:"VID-004", image:"./视频模板.webp", color:"#9C6B30", ratio:"16/9"},
       ]
     },
     {
       key:"playlist-motion",
-      name:"动态歌单背景",
-      image:"动态歌单模板.webp",
+      name:"兄弟卡",
+      image:"./动态歌单模板.webp",
       items:[
-        {code:"MPL-001", image:"动态歌单模板/动态歌单模板.webp", color:"#6E3B5C"},
-        {code:"MPL-002", image:"动态歌单模板/动态歌单模板.webp", color:"#1C1813"},
-        {code:"MPL-003", image:"动态歌单模板/动态歌单模板.webp", color:"#C8472B"},
-        {code:"MPL-004", image:"动态歌单模板/动态歌单模板.webp", color:"#3F5D52"},
-        {code:"MPL-005", image:"动态歌单模板/动态歌单模板.webp", color:"#2B3A67"},
+        {code:"MPL-001", image:"./动态歌单模板.webp", color:"#6E3B5C"},
+        {code:"MPL-002", image:"./动态歌单模板.webp", color:"#1C1813"},
+        {code:"MPL-003", image:"./动态歌单模板.webp", color:"#C8472B"},
+        {code:"MPL-004", image:"./动态歌单模板.webp", color:"#3F5D52"},
+        {code:"MPL-005", image:"./动态歌单模板.webp", color:"#2B3A67"},
       ]
     },
     {
       key:"playlist-static",
-      name:"静态歌单背景",
+      name:"冠名墙",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板/静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板/静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板/静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板/静态歌单模板.webp", color:"#C8472B"},
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
       ]
     },
+    {
+      key:"playlist-static",
+      name:"升级冠",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"歌单模板",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"拍卖模板",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"福利模板",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"厅背景图",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"直播封面",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"厅头模板",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    },
+    {
+      key:"playlist-static",
+      name:"团头/厅头",
+      image:"静态歌单模板.webp",
+      items:[
+        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
+        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
+        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
+        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+      ]
+    }
   ];
 /* ============================================================ */
 
@@ -429,16 +523,26 @@ const lightboxClose = document.getElementById('lightboxClose');
 
 document.getElementById('year').textContent = new Date().getFullYear();
 
+// ── Logo 注入 ──────────────────────────────────────────────
+if(LOGO_URL){
+  const logoImg = document.createElement('img');
+  logoImg.src = LOGO_URL;
+  logoImg.alt = "Logo";
+  logoImg.className = 'brand-logo';
+  document.getElementById('brand').prepend(logoImg);
+}
+
 function renderHome(){
   catGrid.innerHTML = '';
   DATA.forEach(cat=>{
     const card = document.createElement('button');
     card.className = 'cat-card';
     card.setAttribute('aria-label', '查看' + cat.name);
-    
-    // 首页保持原本精美的纸张层叠特效，封面图用 cover 完美裁剪裁剪自适应
+
     const leafBg = cat.image ? `background-image:url('${cat.image}'); background-size:cover; background-position:center;` : '';
-    const maskStyle = cat.image ? `background:rgba(28,24,19,.65); width:100%; height:100%; position:absolute; inset:0; padding:18px; display:flex; flex-direction:column; justify-content:space-between;` : `display:flex; flex-direction:column; justify-content:space-between; padding:18px; height:100%;`;
+    const maskStyle = cat.image
+      ? `background:rgba(28,24,19,.65); width:100%; height:100%; position:absolute; inset:0; padding:18px; display:flex; flex-direction:column; justify-content:space-between;`
+      : `display:flex; flex-direction:column; justify-content:space-between; padding:18px; height:100%;`;
 
     card.innerHTML = `
       <div class="stack">
@@ -474,10 +578,11 @@ function openCategory(key){
     card.className = 'poster-card';
     card.setAttribute('aria-label', `放大查看 ${item.code}`);
 
-    // 计算模板比例样式：如果手动配置了 ratio 就用，否则默认纵向 3/4
-    let itemRatioStyle = item.ratio ? `aspect-ratio: ${item.ratio};` : `aspect-ratio: 3/4;`;
-    const bg = item.image ? `background-image:url('${item.image}'); background-size:cover; background-position:center;` : `background:${item.color}`;
-    
+    const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
+    const bg = item.image
+      ? `background-image:url('${item.image}'); background-size:cover; background-position:center;`
+      : `background:${item.color}`;
+
     card.innerHTML = `
       <div class="poster-thumb" style="${bg} ${itemRatioStyle}">
         ${item.image ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
@@ -502,10 +607,11 @@ function closeCategory(){
 }
 
 function openLightbox(cat, item){
-  // 放大弹窗也无缝适配模板的 ratio 比例
-  let itemRatioStyle = item.ratio ? `aspect-ratio: ${item.ratio};` : `aspect-ratio: 3/4;`;
-  const bg = item.image ? `background-image:url('${item.image}'); background-size:cover; background-position:center;` : `background:${item.color}`;
-  
+  const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
+  const bg = item.image
+    ? `background-image:url('${item.image}'); background-size:cover; background-position:center;`
+    : `background:${item.color}`;
+
   lightboxImg.setAttribute('style', `${bg} ${itemRatioStyle}`);
   lightboxMark.textContent = item.image ? '' : `${cat.name} ${item.code}`;
   lightboxCode.textContent = item.code;
