@@ -3,47 +3,77 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>荼荼 · 模板目录</title>
+<title>荼荼 · 模板目录</title> 
 <style>
+  /* -------------------------------------------------------------
+   * 1. 字体引入与全局变量配置 (CSS Variables)
+   * ------------------------------------------------------------- */
+  /* 引入 Google Fonts 字体：Archivo Black(粗标题)、Archivo(正文)、Space Mono(等宽数字/编号) */
   @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
 
+  /* 日间模式（默认）下的配色主题 */
   :root{
-    --paper:#F1ECE1;
-    --paper-deep:#E8E1D2;
-    --ink:#1C1813;
-    --ink-soft:#5B5448;
-    --accent:#C8472B;
-    --accent-soft:#E7C77B;
-    --line:#CFC6B3;
-    --card-shadow: 0 1px 0 rgba(28,24,19,.06);
+    --paper:#F1ECE1;         /* 网页大背景色（复古米纸色） */
+    --paper-deep:#E8E1D2;    /* 稍微深一点的米色（用于卡片底层叠纸和输入框聚焦） */
+    --ink:#1C1813;           /* 核心文字与线条颜色（墨黑色） */
+    --ink-soft:#5B5448;      /* 次要/辅助文字颜色（软墨色） */
+    --accent:#C8472B;        /* 品牌高亮/点缀色（朱红色） */
+    --accent-soft:#E7C77B;   /* 弹窗内高亮色（编号文字颜色） */
+    --line:#CFC6B3;          /* 分割线颜色 */
+    --card-shadow: 0 1px 0 rgba(28,24,19,.06); /* 卡片基础微弱阴影 */
+    --watermark: rgba(28,24,19,.06);           /* 水印半透明色 */
   }
 
+  /* 夜间模式（暗黑主题）下的配色反转 */
+  [data-theme="dark"] {
+    --paper:#12100E;         /* 深色大背景 */
+    --paper-deep:#1A1714;    /* 深色卡片底层 */
+    --ink:#EAE5DA;           /* 反转后的浅色核心文字 */
+    --ink-soft:#A59E92;      /* 反转后的浅色辅助文字 */
+    --accent:#E05334;        /* 夜间模式微调后的朱红色 */
+    --accent-soft:#E7C77B;   
+    --line:#383229;          
+    --card-shadow: 0 2px 12px rgba(0,0,0,.5); /* 深色模式下加深阴影 */
+    --watermark: rgba(255,255,255,.05);
+  }
+
+  /* -------------------------------------------------------------
+   * 2. 基础页面样式与复古噪点背景
+   * ------------------------------------------------------------- */
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
   body{
     background:var(--paper);
     color:var(--ink);
     font-family:'Archivo',sans-serif;
-    -webkit-font-smoothing:antialiased;
+    -webkit-font-smoothing:antialiased; /* 抗锯齿，使字体更丝滑 */
     min-height:100vh;
+    transition: background .3s ease, color .3s ease; /* 丝滑切换日夜模式 */
   }
 
+  /* 利用伪元素在全屏铺一层微小的复古圆点噪点背景 */
   body::before{
     content:"";
     position:fixed; inset:0;
-    background-image:
-      radial-gradient(circle at 1px 1px, rgba(28,24,19,.05) 1px, transparent 0);
+    background-image: radial-gradient(circle at 1px 1px, rgba(28,24,19,.05) 1px, transparent 0);
     background-size: 22px 22px;
-    pointer-events:none;
+    pointer-events:none; /* 确保不阻挡任何鼠标点击事件 */
     z-index:0;
   }
+  [data-theme="dark"] body::before {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.03) 1px, transparent 0);
+  }
 
+  /* 网页核心内容包裹器 */
   .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:0 28px;}
 
-  /* ===== Header ===== */
+  /* -------------------------------------------------------------
+   * 3. 头部区域 (Header / 品牌 / 搜索 / 切换模式)
+   * ------------------------------------------------------------- */
   header{
     padding:38px 0 26px;
-    border-bottom:3px solid var(--ink);
+    border-bottom:3px solid var(--ink); /* 粗黑复古线条 */
+    position: relative;
   }
   .brand-row{
     display:flex; align-items:flex-end; justify-content:space-between; gap:24px; flex-wrap:wrap;
@@ -51,14 +81,16 @@
   .brand{
     display:flex; align-items:center; gap:14px;
     font-family:'Archivo Black',sans-serif;
-    font-size:clamp(34px,5vw,54px);
+    font-size:clamp(34px,5vw,54px); /* 响应式字体大小计算 */
     line-height:.92;
     letter-spacing:-.01em;
   }
+  /* 自适应 Logo 图片样式 */
   .brand-logo{
     height:190px; width:auto; object-fit:contain; display:block; flex-shrink:0;
   }
-  .brand span{color:var(--accent);}
+  .brand span{color:var(--accent);} /* 突出"Tútú"红字 */
+  
   .meta{
     font-family:'Space Mono',monospace;
     font-size:12.5px;
@@ -74,15 +106,75 @@
     max-width:800px;
   }
 
+  /* 右上角工具栏（搜索+切换主题） */
+  .header-tools {
+    position: absolute;
+    top: 15px;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .search-box-wrap {
+    position: relative;
+    display: inline-block;
+  }
+  /* 搜索输入框：自带伸缩动画效果 */
+  .search-input {
+    appearance: none;
+    border: 1.5px solid var(--ink);
+    background: transparent;
+    color: var(--ink);
+    padding: 6px 14px 6px 32px;
+    font-size: 13px;
+    font-family: inherit;
+    border-radius: 100px;
+    outline: none;
+    width: 180px;
+    transition: all .25s ease; /* 聚焦时变长的过渡动画 */
+  }
+  .search-input:focus {
+    width: 240px; /* 鼠标点进去聚焦时拉长 */
+    background: var(--paper-deep);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .search-icon {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 12px;
+    color: var(--ink-soft);
+    pointer-events: none;
+  }
+
+  /* 日夜模式切换按钮 */
+  .theme-toggle {
+    background: transparent;
+    border: 1.5px solid var(--ink);
+    color: var(--ink);
+    padding: 6px 12px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    border-radius: 100px;
+    cursor: pointer;
+    transition: all .2s ease;
+  }
+  .theme-toggle:hover {
+    background: var(--ink);
+    color: var(--paper);
+  }
+
+  /* 面包屑导航栏（默认隐藏，进入分类时显示） */
   .crumb{
     margin-top:22px;
-    display:none;
+    display:none; 
     align-items:center;
     gap:10px;
     font-family:'Space Mono',monospace;
     font-size:13px;
   }
-  .crumb.show{display:flex;}
+  .crumb.show{display:flex;} /* JS控制显示 */
   .back-btn{
     appearance:none; border:1.5px solid var(--ink); background:transparent;
     color:var(--ink); font-family:'Space Mono',monospace; font-size:13px;
@@ -94,9 +186,12 @@
   .crumb .sep{color:var(--ink-soft);}
   .crumb .current{color:var(--accent); font-weight:700;}
 
+  /* -------------------------------------------------------------
+   * 4. 主体布局与首页三层纸张堆叠效果卡片 (Cat Grid)
+   * ------------------------------------------------------------- */
   main{padding:46px 0 90px;}
 
-  #home-view .section-label{
+  #home-view .section-label {
     font-family:'Space Mono',monospace;
     font-size:12.5px;
     letter-spacing:.12em;
@@ -105,46 +200,44 @@
     margin-bottom:22px;
     display:flex; align-items:center; gap:10px;
   }
+  /* 标签右侧横线自适应延伸 */
   #home-view .section-label::after{
     content:""; flex:1; height:1px; background:var(--line);
   }
 
+  /* 分类网格：纯 CSS 自动响应式断点排版 */
   .cat-grid{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
     gap:26px;
   }
 
+  /* 核心：三层重叠纸张卡片容器 */
   .cat-card{
-    position:relative;
-    cursor:pointer;
-    border:none;
-    background:none;
-    padding:0;
-    text-align:left;
-    font-family:inherit;
-    outline-offset:4px;
+    position:relative; cursor:pointer; border:none; background:none; padding:0; text-align:left; font-family:inherit; outline-offset:4px;
+    will-change: transform;
+    transform: translateZ(0); /* 启用 GPU 硬件加速预防移动端动画掉帧 */
   }
-  .stack{
-    position:relative;
-    height:230px;
-  }
+  .stack{ position:relative; height:230px; }
   .stack .leaf{
-    position:absolute; inset:0;
-    border-radius:3px;
-    border:1.5px solid rgba(28,24,19,.18);
-    box-shadow:var(--card-shadow);
-    transition:transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s ease;
+    position:absolute; inset:0; border-radius:3px;
+    border:1.5px solid rgba(28,24,19,.18); box-shadow:var(--card-shadow);
+    transition:transform .28s cubic-bezier(.2,.7,.3,1), box-shadow .28s ease; /* 贝塞尔曲线让卡片错位动画极为丝滑 */
   }
+  [data-theme="dark"] .stack .leaf { border:1.5px solid rgba(255,255,255,.1); }
+  
+  /* 分别定义 3 层纸片的倾斜角度和初始错位位置 */
   .stack .leaf:nth-child(1){ transform:rotate(-3.5deg) translate(-4px,4px); background:var(--paper-deep); }
-  .stack .leaf:nth-child(2){ transform:rotate(2.5deg) translate(3px,2px); background:#DFD7C3; }
+  .stack .leaf:nth-child(2){ transform:rotate(2.5deg) translate(3px,2px); background: rgba(222, 203, 165, 0.2); }
+  [data-theme="dark"] .stack .leaf:nth-child(2) { background: #26211c; }
+  /* 第 3 层是最上层，用于展示封面图和分类名 */
   .stack .leaf:nth-child(3){
-    transform:rotate(0deg);
-    background:var(--ink);
-    display:flex; flex-direction:column; justify-content:space-between;
-    padding:18px;
-    overflow:hidden;
+    transform:rotate(0deg); background:var(--ink);
+    display:flex; flex-direction:column; justify-content:space-between; padding:18px; overflow:hidden;
+    background-size: cover; background-position: center;
   }
+  
+  /* 悬停 (Hover) 时，底层两张纸片向外炸开、错位角度变大的动效 */
   .cat-card:hover .stack .leaf:nth-child(1){ transform:rotate(-7deg) translate(-9px,8px); }
   .cat-card:hover .stack .leaf:nth-child(2){ transform:rotate(5deg) translate(7px,5px); }
   .cat-card:hover .stack .leaf:nth-child(3){ box-shadow:0 10px 24px rgba(28,24,19,.22); }
@@ -153,160 +246,186 @@
     display:flex; justify-content:space-between; align-items:flex-start;
     font-family:'Space Mono',monospace; color:rgba(241,236,225,.55); font-size:12px;
   }
-  .cat-name{
-    color:var(--paper);
-    font-family:'Archivo Black',sans-serif;
-    font-size:21px;
-    line-height:1.15;
-  }
-  .cat-count{
-    margin-top:10px;
-    font-family:'Space Mono',monospace;
-    font-size:12px;
-    color:var(--ink-soft);
-    display:flex; justify-content:space-between;
-  }
+  [data-theme="dark"] .stack .leaf:nth-child(3) .top-row { color:rgba(28,24,19,.6); }
+  
+  .cat-name{ color:var(--paper); font-family:'Archivo Black',sans-serif; font-size:21px; line-height:1.15; }
+  .cat-count{ margin-top:10px; font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); display:flex; justify-content:space-between; }
 
-  .cat-card:focus-visible .stack .leaf:nth-child(3){ outline:3px solid var(--accent); outline-offset:2px; }
-
+  /* 视图切换核心控制：控制显示与隐藏 */
   #category-view{display:none;}
   #category-view.show{display:block;}
   #home-view.hide{display:none;}
+  #search-view{display:none;}
+  #search-view.show{display:block;}
 
+  /* -------------------------------------------------------------
+   * 5. 分类内海报/图样展示网格 (Poster Grid)
+   * ------------------------------------------------------------- */
   .cat-header{
-    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px;
-    margin-bottom:30px;
+    display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:30px;
   }
-  .cat-header h2{
-    font-family:'Archivo Black',sans-serif;
-    font-size:clamp(26px,4vw,38px);
-    margin:0;
-  }
-  .cat-header .count{
-    font-family:'Space Mono',monospace;
-    color:var(--ink-soft);
-    font-size:13px;
-  }
+  .cat-header h2{ font-family:'Archivo Black',sans-serif; font-size:clamp(26px,4vw,38px); margin:0; }
+  .cat-header .count{ font-family:'Space Mono',monospace; color:var(--ink-soft); font-size:13px; }
 
   .poster-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
-    gap:30px 24px;
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:30px 24px;
   }
-
-  .poster-card{
-    cursor:zoom-in;
-    border:none; background:none; padding:0; text-align:left; font-family:inherit;
-    outline-offset:4px;
-  }
+  .poster-card{ cursor:zoom-in; border:none; background:none; padding:0; text-align:left; font-family:inherit; outline-offset:4px; }
+  
+  /* 海报卡片缩略图外框 */
   .poster-thumb{
-    position:relative;
-    border-radius:2px;
-    border:1.5px solid rgba(28,24,19,.18);
-    overflow:hidden;
-    box-shadow:0 1px 0 rgba(28,24,19,.08);
-    transition:transform .22s ease, box-shadow .22s ease;
+    position:relative; border-radius:2px; border:1.5px solid rgba(28,24,19,.18); overflow:hidden;
+    box-shadow:0 1px 0 rgba(28,24,19,.08); transition:transform .22s ease, box-shadow .22s ease;
     background-size:cover; background-position:center;
+    background-color: var(--paper-deep); 
+    will-change: transform, opacity; 
+    transform: translateZ(0);        
   }
-  .poster-card:hover .poster-thumb{
-    transform:translateY(-5px);
-    box-shadow:0 14px 26px rgba(28,24,19,.22);
+  [data-theme="dark"] .poster-thumb { border:1.5px solid rgba(255,255,255,.1); background-color: #1A1714; }
+  /* 悬停时微微往上浮起并出现阴影 */
+  .poster-card:hover .poster-thumb{ transform:translateY(-5px); box-shadow:0 14px 26px rgba(28,24,19,.22); }
+  
+  /* 懒加载图片就绪后的淡入动画 */
+  .lazy-loaded {
+    animation: fadeInEffect 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
   }
+  @keyframes fadeInEffect {
+    from { opacity: 0.2; }
+    to { opacity: 1; }
+  }
+
+  /* 海报上的编号小标签 */
   .poster-thumb .tag{
-    position:absolute; top:9px; left:9px;
-    background:var(--ink);
-    color:var(--paper);
-    font-family:'Space Mono',monospace;
-    font-size:11px;
-    letter-spacing:.04em;
-    padding:3px 8px;
-    border-radius:2px;
-    z-index: 2;
+    position:absolute; top:9px; left:9px; background:var(--ink); color:var(--paper);
+    font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; padding:3px 8px; border-radius:2px; z-index: 2;
   }
+  /* 无图情况下的兜底正中色块文字标识 */
   .poster-thumb .center-mark{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Archivo Black',sans-serif;
-    font-size:15px;
-    color:rgba(255,255,255,.85);
-    text-align:center;
-    padding:14px;
-    mix-blend-mode:overlay;
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Archivo Black',sans-serif; font-size:15px; color:rgba(255,255,255,.85); text-align:center; padding:14px; mix-blend-mode:overlay;
   }
-  .poster-meta{
-    margin-top:9px;
-    display:flex; justify-content:space-between;
-    font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft);
-  }
+  .poster-meta{ margin-top:9px; display:flex; justify-content:space-between; font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); }
 
+  /* -------------------------------------------------------------
+   * 6. 大图详情弹窗 & 高级安全防盗预览系统 (Lightbox)
+   * ------------------------------------------------------------- */
   .lightbox{
-    position:fixed; inset:0; z-index:50;
-    background:rgba(20,17,13,.92);
-    display:none;
-    align-items:center; justify-content:center;
-    padding:40px;
+    position:fixed; inset:0; z-index:50; background:rgba(20,17,13,.95);
+    display:none; align-items:center; justify-content:center; padding:20px;
+    opacity: 0; transition: opacity 0.25s cubic-bezier(0.25, 0.46, 0.45, 0.94);
   }
-  .lightbox.show{display:flex;}
+  [data-theme="dark"] .lightbox { background:rgba(10,8,7,.97); }
+  .lightbox.show{ display:flex; opacity: 1; } /* 显示弹窗 */
+  
   .lightbox-inner{
-    max-width:min(720px,90vw);
-    width:100%;
+    max-width:min(480px,95vw); width:100%; margin:auto; max-height: 90vh; display: flex; flex-direction: column;
   }
-  .lightbox-img{
-    width:100%;
-    border-radius:3px;
-    background-size:cover; background-position:center;
-    box-shadow:0 30px 60px rgba(0,0,0,.5);
-    position:relative;
-    transition: aspect-ratio 0.2s ease;
+  
+  /* 弹窗图片滚动容器：支持长图内部滚动独立操作 */
+  .lightbox-scroll-container {
+    width: 100%; overflow-y: auto; max-height: 58vh; border-radius: 4px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12);
+    position: relative; background: #1A1714; scrollbar-width: thin;
   }
-  .lightbox-img .center-mark{
-    position:absolute; inset:0;
-    display:flex; align-items:center; justify-content:center;
-    font-family:'Archivo Black',sans-serif;
-    font-size:22px; color:rgba(255,255,255,.85);
-    text-align:center; padding:20px;
-    mix-blend-mode:overlay;
+  
+  /* 高级防盗图外层：禁用右键、长按与保存行为 */
+  .secure-img-wrapper {
+    position: relative; width: 100%; display: block;
+    pointer-events: none; -webkit-touch-callout: none; user-select: none;           
+    background: #1A1714; 
+    min-height: 280px; 
+    overflow: hidden;
   }
+  /* 骨架屏：未加载出图时的灰色微光闪烁动画 */
+  .secure-img-wrapper::before {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.04), transparent);
+    transform: translateX(-100%);
+    animation: skeletonShimmer 1.6s infinite;
+    z-index: 1;
+  }
+  @keyframes skeletonShimmer {
+    100% { transform: translateX(100%); }
+  }
+
+  .secure-img-wrapper img { 
+    width: 100%; display: block; height: auto; 
+    opacity: 0; transition: opacity 0.4s cubic-bezier(0.215, 0.610, 0.355, 1); 
+    position: relative; z-index: 2;
+  }
+  .secure-img-wrapper img.loaded { opacity: 1; }              /* 加载成功后展出 */
+  .secure-img-wrapper.loading-done::before { display: none; } /* 移除骨架屏动画 */
+
+  /* 核心防盗逻辑：使用 CSS 生成永不可被长按或下载分离的文字全屏倾斜水印层 */
+  .secure-img-wrapper::after {
+    content: "TUTU STUDIO 荼荼工作室 防盗预览";
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center; flex-wrap: wrap;
+    font-family: sans-serif; font-weight: bold; font-size: 14px;
+    color: rgba(255,255,255,0.12); text-shadow: 1px 1px 1px rgba(0,0,0,0.2);
+    transform: rotate(-30deg); pointer-events: none; z-index: 3;
+  }
+
+  /* 大图未配置时的占位色块 */
+  .lightbox-img-fallback { width:100%; border-radius:4px; position:relative; aspect-ratio: 3/4; }
+  .lightbox-img-fallback .center-mark{
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family:'Archivo Black',sans-serif; font-size:22px; color:rgba(255,255,255,.85); text-align:center; padding:20px; mix-blend-mode:overlay;
+  }
+  
+  /* 弹窗底部信息及控制区域 */
   .lightbox-cap{
-    display:flex; justify-content:space-between; align-items:center;
-    margin-top:16px;
-    font-family:'Space Mono',monospace;
-    color:var(--paper);
-    font-size:13px;
+    display:flex; flex-direction: column; align-items: center; gap: 10px;
+    margin-top: 14px; font-family:'Space Mono', monospace; color:#F1ECE1; font-size:14px; text-align: center; flex-shrink: 0;
   }
+  .code-row { display: flex; align-items: center; gap: 8px; }
+  #lightboxCode { font-weight: bold; font-size: 16px; color: var(--accent-soft); }
+  
+  /* 仅复制编号的小按钮 */
+  .copy-mini-btn {
+    background: rgba(255,255,255,0.15); border: none; color: #fff;
+    padding: 2px 6px; font-size: 11px; border-radius: 4px; cursor: pointer;
+    pointer-events: auto; /* 必须单独开启事件，否则会被父级限制无法点击 */
+  }
+  .copy-mini-btn:hover { background: var(--accent); }
+  #lightboxCatName { font-size: 12px; color: rgba(241,236,225,.6); transition: margin-top 0.3s ease; }
+
+  /* 弹窗关闭按钮(右上角 X) */
   .lightbox-close{
-    appearance:none; border:1.5px solid var(--paper); background:transparent;
-    color:var(--paper); border-radius:100px; width:34px; height:34px;
-    cursor:pointer; font-size:16px; line-height:1;
-    position:absolute; top:24px; right:28px;
-    display:flex; align-items:center; justify-content:center;
-    transition:background .15s ease, color .15s ease;
+    appearance:none; border:1.5px solid #F1ECE1; background:transparent;
+    color:#F1ECE1; border-radius:100px; width:36px; height:36px;
+    cursor:pointer; font-size:16px; line-height:1; position:absolute; top:20px; right:20px;
+    display:flex; align-items:center; justify-content:center; transition:background .15s ease, color .15s ease; z-index: 60;
   }
-  .lightbox-close:hover{background:var(--paper); color:var(--ink);}
+  .lightbox-close:hover{background:#F1ECE1; color:#1C1813;}
 
-  footer{
-    border-top:1.5px solid var(--line);
-    padding:22px 0 40px;
-    font-family:'Space Mono',monospace;
-    font-size:12px;
-    color:var(--ink-soft);
-    text-align:center;
-  }
+  /* -------------------------------------------------------------
+   * 7. 底部版权与无障碍动画优化
+   * ------------------------------------------------------------- */
+  footer{ border-top:1.5px solid var(--line); padding:22px 0 40px; font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); text-align:center; }
 
-  @media (prefers-reduced-motion: reduce){
-    *{transition:none !important;}
-  }
+  /* 针对系统开启“减少动画动效”的用户，自动取消所有过滤和变形效果，保证极端情况下的可用性 */
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important;} }
 </style>
 </head>
 <body>
 
 <div class="wrap">
   <header>
+    <div class="header-tools">
+      <div class="search-box-wrap">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="searchInput" class="search-input" placeholder="输入编号或名称搜索...">
+      </div>
+      <button class="theme-toggle" id="themeToggle">MODE: LIGHT</button>
+    </div>
+    
     <div class="brand-row">
       <div class="brand" id="brand">荼荼 <span>Tútú</span></div>
       <div class="meta">模板目录 · TEMPLATE CATALOG<br>持续更新中 — UPDATED REGULARLY</div>
     </div>
     <p class="tagline">🍰歌单｜冠名卡｜拍卖图｜厅图｜等都可定制🌟 <br>一律先付款后出图，按付款顺序出图，24h内出。加急插队双倍~</p>
+    
     <div class="crumb" id="crumb">
       <button class="back-btn" id="backBtn">← 返回全部分类</button>
       <span class="sep">/</span>
@@ -327,29 +446,51 @@
       </div>
       <div class="poster-grid" id="posterGrid"></div>
     </section>
+
+    <section id="search-view">
+      <div class="cat-header">
+        <h2>搜索结果 · Search Results</h2>
+        <span class="count" id="searchCount">找到 0 款相关模板</span>
+      </div>
+      <div class="poster-grid" id="searchResultGrid"></div>
+    </section>
   </main>
 
-  <footer>© <span id="year"></span> 荼荼工作室 · 仅供客户在线挑选模板使用</footer>
+  <footer>© <span id="year"></span> 荼荼工作室 · Tútú Studio</footer>
 </div>
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">✕</button>
   <div class="lightbox-inner">
-    <div class="lightbox-img" id="lightboxImg"><div class="center-mark" id="lightboxMark"></div></div>
+    <div class="lightbox-scroll-container" id="lightboxScrollBox"></div>
+    
     <div class="lightbox-cap">
-      <span id="lightboxCode"></span>
+      <div class="code-row">
+        <span id="lightboxCode"></span>
+        <button class="copy-mini-btn" id="copyCodeOnlyBtn" title="仅复制编号">📋 复制</button>
+      </div>
+      
+      <div class="custom-action-wrapper" style="position: relative; width: 85%; max-width: 280px; margin: 0 auto;">
+        <button id="customBtn" style="appearance:none; border:none; background:var(--accent); color:#F1ECE1; font-family:inherit; padding:10px 24px; border-radius:100px; cursor:pointer; font-size:14px; font-weight:700; letter-spacing:0.05em; width:100%; box-shadow:0 4px 12px rgba(200,71,43,.3); transition:all 0.3s ease; pointer-events: auto; position: relative; z-index: 10;">
+          ✂️ 复制定制信息并联系
+        </button>
+        
+        <div id="hiddenQrWrap" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; z-index: 1; opacity: 0; transition: all 0.3s ease;">
+          <img src="微信二维码.jpg" id="wechatQr" style="width: 100%; height: auto; max-width: 130px; border: 1.5px solid #F1ECE1; padding: 4px; background: #fff; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        </div>
+      </div>
+      
       <span id="lightboxCatName"></span>
     </div>
   </div>
 </div>
 
 <script>
-/* ============================================================
-   ★ LOGO 配置：把下面的链接换成你自己的图片地址即可。
-      留空（""）时不显示 logo 图片，只显示文字标题。
-   ============================================================ */
-  const LOGO_URL = "微信图片_20260701223501_42605_56.png";   // ← 在引号里填入你的图片 URL
-
+  /* -------------------------------------------------------------
+   * 8. 全局动态配置与核心基础数据结构
+   * ------------------------------------------------------------- */
+  const LOGO_URL = "微信图片_20260701223501_42605_56.png"; 
+  
 /* ============================================================
    数据区：以后新增分类 / 模板，只需要在这里改这个对象即可。
    ----------------------------------------------------------
@@ -361,22 +502,20 @@
 
    每个模板(item)：
      code     —— 编号，例如 "PST-001"（会显示在卡片和放大图上）
-     image    —— 模板图片地址。换成你自己的图片 URL 即可。
+     image    —— 模板图片地址。换成你自己的图片 URL 即可。支持多图逻辑：任何一项的 image 都可以写 1 个到无限多个路径（例：["1.jpg", "2.jpg"]）
      color    —— 占位色块的颜色（没有图片时使用），可选
      ratio    —— 比例控制，例如 "16/9"、"1"、"4/3"、"3/4"，不填默认竖版 3/4
    ============================================================ */
   const DATA = [
     {
       key:"poster",
-      name:"冠名卡（卡名可以改，冠歌卡，情侣卡同理）",
-      image:"./海报模板.jpg",
+      name:"冠名卡（可改冠歌/情侣卡）",
+      image:"./海报模板.jpg", /* 分类封面大图 */
       items:[
-        {code:"PST-001", image:"./海报模板.jpg", color:"#C8472B"},
-        {code:"PST-002", image:"./海报模板.jpg", color:"#3F5D52"},
-        {code:"PST-003", image:"./海报模板.jpg", color:"#2B3A67"},
-        {code:"PST-004", image:"./海报模板.jpg", color:"#9C6B30"},
-        {code:"PST-005", image:"./海报模板.jpg", color:"#6E3B5C"},
-        {code:"PST-006", image:"./海报模板.jpg", color:"#1C1813"},
+        {code:"PST-001", image:["./海报模板.jpg"], color:"#C8472B"}, /* 编号、细节图组（支持多张）、无图备用底色 */
+        {code:"PST-002", image:["./海报模板.jpg"], color:"#3F5D52"},
+        {code:"PST-003", image:["./海报模板.jpg"], color:"#2B3A67"},
+        {code:"PST-004", image:["./海报模板.jpg"], color:"#9C6B30"},
       ]
     },
     {
@@ -384,10 +523,8 @@
       name:"闺蜜卡",
       image:"./视频模板.webp",
       items:[
-        {code:"VID-001", image:"./视频模板.webp", color:"#2B3A67", ratio:"16/9"},
-        {code:"VID-002", image:"./视频模板.webp", color:"#C8472B", ratio:"16/9"},
-        {code:"VID-003", image:"./视频模板.webp", color:"#3F5D52", ratio:"16/9"},
-        {code:"VID-004", image:"./视频模板.webp", color:"#9C6B30", ratio:"16/9"},
+        {code:"GMF-001", image:["./视频模板.webp"], color:"#2B3A67", ratio:"16/9"}, /* ratio 可以控制特别款海报为 16:9 比例 */
+        {code:"GMF-002", image:["./视频模板.webp"], color:"#C8472B", ratio:"16/9"},
       ]
     },
     {
@@ -395,11 +532,8 @@
       name:"兄弟卡",
       image:"./动态歌单模板.webp",
       items:[
-        {code:"MPL-001", image:"./动态歌单模板.webp", color:"#6E3B5C"},
-        {code:"MPL-002", image:"./动态歌单模板.webp", color:"#1C1813"},
-        {code:"MPL-003", image:"./动态歌单模板.webp", color:"#C8472B"},
-        {code:"MPL-004", image:"./动态歌单模板.webp", color:"#3F5D52"},
-        {code:"MPL-005", image:"./动态歌单模板.webp", color:"#2B3A67"},
+        {code:"XDK-001", image:["./动态歌单模板.webp"], color:"#6E3B5C"},
+        {code:"XDK-002", image:["./动态歌单模板.webp"], color:"#1C1813"},
       ]
     },
     {
@@ -407,230 +541,469 @@
       name:"冠名墙",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"GMW-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
+        {code:"GMW-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"upgrade",
       name:"升级冠",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"UPG-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
+        {code:"UPG-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"playlist-tpl",
       name:"歌单模板",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"TPL-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
+        {code:"TPL-002", image:["静态歌单模板.webp"], color:"#C8472B"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"auction",
       name:"拍卖模板",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"AUC-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
+        {code:"AUC-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"welfare",
       name:"福利模板",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"WEL-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
+        {code:"WEL-002", image:["静态歌单模板.webp"], color:"#C8472B"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"room-bg",
       name:"厅背景图",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"RBG-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
+        {code:"RBG-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"live-cover",
       name:"直播封面",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"COV-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
+        {code:"COV-002", image:["静态歌单模板.webp"], color:"#C8472B"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"room-header",
       name:"厅头模板",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"RHD-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
+        {code:"RHD-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
       ]
     },
     {
-      key:"playlist-static",
+      key:"team-header",
       name:"团头/厅头",
       image:"静态歌单模板.webp",
       items:[
-        {code:"SPL-001", image:"静态歌单模板.webp", color:"#9C6B30"},
-        {code:"SPL-002", image:"静态歌单模板.webp", color:"#6E3B5C"},
-        {code:"SPL-003", image:"静态歌单模板.webp", color:"#2B3A67"},
-        {code:"SPL-004", image:"静态歌单模板.webp", color:"#C8472B"},
+        {code:"THD-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
+        {code:"THD-002", image:["静态歌单模板.webp"], color:"#C8472B"},
       ]
     }
   ];
-/* ============================================================ */
 
-const homeView = document.getElementById('home-view');
-const categoryView = document.getElementById('category-view');
-const catGrid = document.getElementById('catGrid');
-const posterGrid = document.getElementById('posterGrid');
-const catTitle = document.getElementById('catTitle');
-const catCount = document.getElementById('catCount');
-const crumb = document.getElementById('crumb');
-const crumbCurrent = document.getElementById('crumbCurrent');
-const backBtn = document.getElementById('backBtn');
+  /* -------------------------------------------------------------
+   * 9. DOM 元素节点获取
+   * ------------------------------------------------------------- */
+  const homeView = document.getElementById('home-view');
+  const categoryView = document.getElementById('category-view');
+  const searchView = document.getElementById('search-view');
 
-const lightbox = document.getElementById('lightbox');
-const lightboxImg = document.getElementById('lightboxImg');
-const lightboxMark = document.getElementById('lightboxMark');
-const lightboxCode = document.getElementById('lightboxCode');
-const lightboxCatName = document.getElementById('lightboxCatName');
-const lightboxClose = document.getElementById('lightboxClose');
+  const catGrid = document.getElementById('catGrid');
+  const posterGrid = document.getElementById('posterGrid');
+  const searchResultGrid = document.getElementById('searchResultGrid');
 
-document.getElementById('year').textContent = new Date().getFullYear();
+  const catTitle = document.getElementById('catTitle');
+  const catCount = document.getElementById('catCount');
+  const searchCount = document.getElementById('searchCount');
 
-// ── Logo 注入 ──────────────────────────────────────────────
-if(LOGO_URL){
-  const logoImg = document.createElement('img');
-  logoImg.src = LOGO_URL;
-  logoImg.alt = "Logo";
-  logoImg.className = 'brand-logo';
-  document.getElementById('brand').prepend(logoImg);
-}
+  const crumb = document.getElementById('crumb');
+  const crumbCurrent = document.getElementById('crumbCurrent');
+  const backBtn = document.getElementById('backBtn');
+  const searchInput = document.getElementById('searchInput');
 
-function renderHome(){
-  catGrid.innerHTML = '';
-  DATA.forEach(cat=>{
-    const card = document.createElement('button');
-    card.className = 'cat-card';
-    card.setAttribute('aria-label', '查看' + cat.name);
+  const lightbox = document.getElementById('lightbox');
+  const lightboxScrollBox = document.getElementById('lightboxScrollBox');
+  const lightboxCode = document.getElementById('lightboxCode');
+  const lightboxCatName = document.getElementById('lightboxCatName');
+  const lightboxClose = document.getElementById('lightboxClose');
 
-    const leafBg = cat.image ? `background-image:url('${cat.image}'); background-size:cover; background-position:center;` : '';
-    const maskStyle = cat.image
-      ? `background:rgba(28,24,19,.65); width:100%; height:100%; position:absolute; inset:0; padding:18px; display:flex; flex-direction:column; justify-content:space-between;`
-      : `display:flex; flex-direction:column; justify-content:space-between; padding:18px; height:100%;`;
+  const customBtn = document.getElementById('customBtn');
+  const copyCodeOnlyBtn = document.getElementById('copyCodeOnlyBtn');
+  const themeToggle = document.getElementById('themeToggle');
+  const hiddenQrWrap = document.getElementById('hiddenQrWrap');
 
-    card.innerHTML = `
-      <div class="stack">
-        <div class="leaf"></div>
-        <div class="leaf"></div>
-        <div class="leaf" style="${leafBg} padding:0; overflow:hidden;">
-          <div style="${maskStyle}">
-            <div class="top-row"><span>CATALOG</span><span>${String(cat.items.length).padStart(2,'0')}</span></div>
-            <div>
-              <div class="cat-name">${cat.name}</div>
-              <div class="cat-count" style="${cat.image ? 'color:rgba(241,236,225,.8)' : ''}"><span>共 ${cat.items.length} 款</span><span>查看 →</span></div>
+  // 用于临时存放当前正在弹窗中浏览的分类及海报数据项
+  let currentActiveCat = null;
+  let currentActiveItem = null;
+
+  // 动态更新底部版权年份
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  /* -------------------------------------------------------------
+   * 10. 高性能 IntersectionObserver 图片视口懒加载逻辑
+   * ------------------------------------------------------------- */
+  const lazyImageObserver = new IntersectionObserver((entries, observer) => {
+    entries.forEach(entry => {
+      // 当卡片或者海报容器进入视口（或即将滑入前方500px内）时触发加载
+      if (entry.isIntersecting) {
+        const thumbDiv = entry.target;
+        const trueImgUrl = thumbDiv.getAttribute('data-bg');
+        
+        if (trueImgUrl) {
+          const img = new Image();
+          img.src = trueImgUrl;
+          img.onload = () => {
+            // 图片完全下载完成，挂载为背景图，触发 CSS 渐显动画
+            thumbDiv.style.backgroundImage = `url('${trueImgUrl}')`;
+            thumbDiv.classList.add('lazy-loaded'); 
+          };
+          img.onerror = () => {
+            // 加载失败时使用灰色兜底
+            thumbDiv.style.backgroundColor = "var(--line)";
+          };
+        }
+        observer.unobserve(thumbDiv); // 加载后立即解除监听，释放内存
+      }
+    });
+  }, {
+    rootMargin: "0px 0px 500px 0px" // 预加载边界：在用户向下滑动提前 500 像素时自动开始加载
+  });
+
+  /* -------------------------------------------------------------
+   * 11. 日夜颜色主题一键切换逻辑
+   * ------------------------------------------------------------- */
+  themeToggle.addEventListener('click', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    if(isDark) {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = "MODE: LIGHT";
+    } else {
+      document.documentElement.setAttribute('data-theme', 'dark');
+      themeToggle.textContent = "MODE: DARK";
+    }
+  });
+
+  // 如果定义了 LOGO_URL，自动在标题处动态无缝插入工作室 Logo
+  if(LOGO_URL){
+    const logoImg = document.createElement('img');
+    logoImg.src = LOGO_URL;
+    logoImg.alt = "Logo";
+    logoImg.className = 'brand-logo';
+    document.getElementById('brand').prepend(logoImg);
+  }
+
+  /* -------------------------------------------------------------
+   * 12. 视图渲染与事件交互处理控制流 (Main Functions)
+   * ------------------------------------------------------------- */
+  
+  // A. 渲染首页分类叠纸卡片
+  function renderHome(){
+    catGrid.innerHTML = '';
+    DATA.forEach(cat=>{
+      const card = document.createElement('button');
+      card.className = 'cat-card';
+      card.setAttribute('aria-label', '查看' + cat.name);
+
+      const leafBg = cat.image ? `data-bg="${cat.image}"` : '';
+      const maskStyle = cat.image
+        ? `background:rgba(28,24,19,.65); width:100%; height:100%; position:absolute; inset:0; padding:18px; display:flex; flex-direction:column; justify-content:space-between;`
+        : `display:flex; flex-direction:column; justify-content:space-between; padding:18px; height:100%;`;
+
+      // 动态构造包含 3 层 Leaf 的重叠 HTML 结构
+      card.innerHTML = `
+        <div class="stack">
+          <div class="leaf"></div>
+          <div class="leaf"></div>
+          <div class="leaf target-leaf" ${leafBg} style="padding:0; overflow:hidden;">
+            <div style="${maskStyle}">
+              <div class="top-row"><span style="color:#FFF;">CATALOG</span><span style="color:#FFF;">${String(cat.items.length).padStart(2,'0')}</span></div>
+              <div>
+                <div class="cat-name" style="color:#FFF;">${cat.name}</div>
+                <div class="cat-count" style="color:rgba(241,236,225,.8)"><span>共 ${cat.items.length} 款</span><span>查看 →</span></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    `;
-    card.addEventListener('click', ()=>openCategory(cat.key));
-    catGrid.appendChild(card);
+      `;
+      
+      const leafElement = card.querySelector('.target-leaf');
+      if (cat.image) {
+        lazyImageObserver.observe(leafElement); // 对最上层纸片绑定懒加载监听
+      }
+
+      // 点击分类卡片，清空输入框并进入分类子页
+      card.addEventListener('click', ()=> {
+        searchInput.value = ''; 
+        openCategory(cat.key);
+      });
+      catGrid.appendChild(card);
+    });
+  }
+
+  // B. 打开特定分类明细视图
+  function openCategory(key){
+    const cat = DATA.find(c=>c.key===key);
+    if(!cat) return;
+    catTitle.textContent = cat.name;
+    catCount.textContent = `共 ${cat.items.length} 款模板`;
+    crumbCurrent.textContent = cat.name;
+    crumb.classList.add('show'); // 展现顶部返回面包屑
+
+    posterGrid.innerHTML = '';
+    cat.items.forEach(item=>{
+      const card = document.createElement('button');
+      card.className = 'poster-card';
+      card.setAttribute('aria-label', `放大查看 ${item.code}`);
+
+      const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
+      const firstImg = (Array.isArray(item.image) && item.image.length > 0) ? item.image[0] : null;
+
+      card.innerHTML = `
+        <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
+          ${firstImg ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
+          <span class="tag">${item.code}</span>
+        </div>
+        <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
+      `;
+      
+      const thumbElement = card.querySelector('.poster-thumb');
+      if (firstImg) {
+        lazyImageObserver.observe(thumbElement); // 绑定海报网格图片懒加载
+      }
+
+      card.addEventListener('click', ()=>openLightbox(cat, item));
+      posterGrid.appendChild(card);
+    });
+
+    // 视图排他显示切换
+    homeView.classList.add('hide');
+    searchView.classList.remove('show');
+    categoryView.classList.add('show');
+    window.scrollTo({top:0, behavior:'smooth'}); // 自动平滑置顶
+  }
+
+  // C. 模糊搜索功能监听事件（支持分类名或产品编号混合过滤）
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.trim().toLowerCase(); 
+    
+    // 如果用户清空了输入框，根据面包屑状态返回此前视图
+    if (query === '') {
+      searchView.classList.remove('show');
+      if (crumb.classList.contains('show')) {
+        categoryView.classList.add('show');
+        homeView.classList.add('hide');
+      } else {
+        homeView.classList.remove('hide');
+        categoryView.classList.remove('show');
+      }
+      return;
+    }
+
+    // 激活搜索结果视图层
+    homeView.classList.add('hide');
+    categoryView.classList.remove('show');
+    searchView.classList.add('show');
+
+    searchResultGrid.innerHTML = '';
+    let matchCount = 0;
+
+    // 双重循环检索匹配项
+    DATA.forEach(cat => {
+      cat.items.forEach(item => {
+        const matchCode = item.code.toLowerCase().includes(query);
+        const matchCatName = cat.name.toLowerCase().includes(query);
+
+        if (matchCode || matchCatName) {
+          matchCount++;
+          const card = document.createElement('button');
+          card.className = 'poster-card';
+          
+          const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
+          const firstImg = (Array.isArray(item.image) && item.image.length > 0) ? item.image[0] : null;
+
+          card.innerHTML = `
+            <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
+              ${firstImg ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
+              <span class="tag">${item.code}</span>
+            </div>
+            <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
+          `;
+          
+          const thumbElement = card.querySelector('.poster-thumb');
+          if (firstImg) { lazyImageObserver.observe(thumbElement); }
+
+          card.addEventListener('click', () => openLightbox(cat, item));
+          searchResultGrid.appendChild(card);
+        }
+      });
+    });
+
+    searchCount.textContent = `找到 ${matchCount} 款相关模板`;
   });
-}
 
-function openCategory(key){
-  const cat = DATA.find(c=>c.key===key);
-  if(!cat) return;
-  catTitle.textContent = cat.name;
-  catCount.textContent = `共 ${cat.items.length} 款模板`;
-  crumbCurrent.textContent = cat.name;
-  crumb.classList.add('show');
+  // D. 关闭子分类视图返回大厅
+  function closeCategory(){
+    searchInput.value = ''; 
+    searchView.classList.remove('show');
+    homeView.classList.remove('hide');
+    categoryView.classList.remove('show');
+    crumb.classList.remove('show');
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
 
-  posterGrid.innerHTML = '';
-  cat.items.forEach(item=>{
-    const card = document.createElement('button');
-    card.className = 'poster-card';
-    card.setAttribute('aria-label', `放大查看 ${item.code}`);
+  // E. 唤起全屏大图预览弹窗
+  function openLightbox(cat, item){
+    currentActiveCat = cat;
+    currentActiveItem = item;
+    lightboxScrollBox.innerHTML = ''; // 卸载旧大图，清空 DOM
 
-    const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
-    const bg = item.image
-      ? `background-image:url('${item.image}'); background-size:cover; background-position:center;`
-      : `background:${item.color}`;
+    // 初始化重置交互状态：确保每次点开新大图，按钮都处于初始“可点击”状态，隐藏二维码
+    if(hiddenQrWrap) {
+      customBtn.style.background = "var(--accent)";
+      customBtn.style.color = "#F1ECE1";
+      customBtn.style.border = "none";
+      customBtn.style.fontSize = "14px";
+      customBtn.style.transform = "none";
+      customBtn.style.boxShadow = "0 4px 12px rgba(200,71,43,.3)";
+      customBtn.innerHTML = "✂️ 复制定制信息并联系";
+      hiddenQrWrap.style.opacity = "0";
+      hiddenQrWrap.style.top = "0";
+      lightboxCatName.style.marginTop = "0px";
+    }
 
-    card.innerHTML = `
-      <div class="poster-thumb" style="${bg} ${itemRatioStyle}">
-        ${item.image ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
-        <span class="tag">${item.code}</span>
-      </div>
-      <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
-    `;
-    card.addEventListener('click', ()=>openLightbox(cat, item));
-    posterGrid.appendChild(card);
+    const images = Array.isArray(item.image) ? item.image : [item.image];
+    
+    if (images.length > 0 && images[0]) {
+      images.forEach(imgUrl => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'secure-img-wrapper'; // 启用防盗外框
+        
+        const img = document.createElement('img');
+        img.alt = item.code;
+        img.setAttribute('data-src', imgUrl); // 写入临时占位路径
+        
+        wrapper.appendChild(img);
+        lightboxScrollBox.appendChild(wrapper); 
+      });
+    } else {
+      // 极端无图时启用色块兜底
+      const fallback = document.createElement('div');
+      fallback.className = 'lightbox-img-fallback';
+      fallback.style.background = item.color;
+      fallback.innerHTML = `<div class="center-mark">${cat.name} ${item.code}</div>`;
+      lightboxScrollBox.appendChild(fallback);
+    }
+
+    lightboxCode.textContent = "编号：" + item.code;
+    lightboxCatName.textContent = "分类：" + cat.name;
+    
+    lightbox.classList.add('show');
+    document.body.style.overflow = 'hidden'; // 背景锁定：大图打开后禁止底层主网页滑动
+    lightboxScrollBox.scrollTop = 0;          
+
+    // 延迟 150ms 触发大图数据流下载，确保骨架屏平稳过渡
+    setTimeout(() => {
+      const pendingImages = lightboxScrollBox.querySelectorAll('img[data-src]');
+      pendingImages.forEach(img => {
+        const realSrc = img.getAttribute('data-src');
+        img.src = realSrc; // 正式注入路径流开始下载
+        
+        img.onload = function() {
+          img.classList.add('loaded'); 
+          img.parentElement.classList.add('loading-done'); // 图片好了，隐藏闪烁骨架流
+        };
+      });
+    }, 150);
+  }
+
+  // F. 释放弹窗还原页面
+  function closeLightbox(){
+    lightbox.classList.remove('show');
+    document.body.style.overflow = ''; // 恢复主页滚动条
+  }
+
+  /* -------------------------------------------------------------
+   * 13. 系统级剪贴板读写与按钮原地转换无弹窗长按方案实现 (Interaction)
+   * ------------------------------------------------------------- */
+  customBtn.addEventListener('click', (e) => {
+    e.stopPropagation(); 
+    if(!currentActiveCat || !currentActiveItem) return;
+
+    // 自动构建带品牌标识符规范的剪贴板定制文本
+    const textToCopy = `【荼荼工作室】定制模板需求：\n-------------------------\n分类：${currentActiveCat.name}\n编号：${currentActiveItem.code}`;
+
+    // 写入手机/电脑剪贴板
+    navigator.clipboard.writeText(textToCopy).then(() => {
+      triggerButtonTransform();
+    }).catch(err => {
+      // 容错处理：若部分旧内核浏览器不支持原生剪贴板API，依旧强制展出二维码防死锁
+      triggerButtonTransform();
+    });
   });
 
-  homeView.classList.add('hide');
-  categoryView.classList.add('show');
-  window.scrollTo({top:0, behavior:'smooth'});
-}
+  // “点击变身”核心动效：按钮原地变形成提示框，并在正下方优雅展示二维码供长按
+  function triggerButtonTransform() {
+    customBtn.style.background = "var(--paper-deep)";
+    customBtn.style.color = "var(--ink-soft)";
+    customBtn.style.border = "1.5px solid var(--ink)";
+    customBtn.style.boxShadow = "none";
+    customBtn.style.fontSize = "11px";
+    customBtn.innerHTML = "🎉 复制成功！请长按下方二维码加微信";
+    customBtn.style.transform = "translateY(-6px)"; // 按钮轻微向上浮动让出空间
+    
+    if(hiddenQrWrap) {
+      hiddenQrWrap.style.opacity = "1";
+      hiddenQrWrap.style.top = "42px"; // 将原先隐藏在按钮底部的二维码向下平滑推出
+      hiddenQrWrap.style.height = "auto";
+    }
+    
+    // 给外围布局向下撑开 140px，防止二维码滑出时与最底部的分类名文本发生重叠
+    lightboxCatName.style.marginTop = "140px";
+  }
 
-function closeCategory(){
-  homeView.classList.remove('hide');
-  categoryView.classList.remove('show');
-  crumb.classList.remove('show');
-  window.scrollTo({top:0, behavior:'smooth'});
-}
+  // 辅助复制：点击编号行的小图标仅复制海报纯文本编号
+  copyCodeOnlyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if(!currentActiveItem) return;
+    navigator.clipboard.writeText(currentActiveItem.code).then(() => {
+      const originalText = copyCodeOnlyBtn.textContent;
+      copyCodeOnlyBtn.textContent = "✓ 已复制"; 
+      setTimeout(() => { copyCodeOnlyBtn.textContent = originalText; }, 1500); 
+    });
+  });
 
-function openLightbox(cat, item){
-  const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
-  const bg = item.image
-    ? `background-image:url('${item.image}'); background-size:cover; background-position:center;`
-    : `background:${item.color}`;
+  /* -------------------------------------------------------------
+   * 14. 页面事件全局兜底总线
+   * ------------------------------------------------------------- */
+  backBtn.addEventListener('click', closeCategory);
+  lightboxClose.addEventListener('click', closeLightbox);
+  // 点击弹窗两侧黑框半透明区域直接自动收起弹窗
+  lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLightbox(); });
+  // 支持电脑端按下物理键盘“ESC”按键直接极速关闭大图弹窗
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
 
-  lightboxImg.setAttribute('style', `${bg} ${itemRatioStyle}`);
-  lightboxMark.textContent = item.image ? '' : `${cat.name} ${item.code}`;
-  lightboxCode.textContent = item.code;
-  lightboxCatName.textContent = cat.name;
-  lightbox.classList.add('show');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeLightbox(){
-  lightbox.classList.remove('show');
-  document.body.style.overflow = '';
-}
-
-backBtn.addEventListener('click', closeCategory);
-lightboxClose.addEventListener('click', closeLightbox);
-lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLightbox(); });
-document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeLightbox(); });
-
-renderHome();
+  // -------------------------------------------------------------
+  // 15. 首次启动加载：初始化渲染首页
+  // -------------------------------------------------------------
+  renderHome();
 </script>
 
 </body>
