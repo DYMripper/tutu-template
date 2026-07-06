@@ -15,7 +15,7 @@
    ============================================================ */
 const DATA = [
   {
-    key:"poster",
+    key:"Sponsored_Card",
     name:"冠名卡（可改冠歌/情侣卡）",
     image:"./Sponsored_Card.jpg", /* 分类封面大图 */
     items:[
@@ -219,102 +219,99 @@ const DATA = [
     ]
   },
   {
-    key:"video",
+    key:"Sister_Card",
     name:"闺蜜卡",
-    image:"./视频模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"GMF-001", image:["./视频模板.webp"], color:"#2B3A67", ratio:"16/9"}, /* ratio 可以控制特别款海报为 16:9 比例 */
-      {code:"GMF-002", image:["./视频模板.webp"], color:"#C8472B", ratio:"16/9"},
+      {code:"GMF-001", image:["敬请期待.jpg"], color:"#2B3A67", ratio:"16/9"} /* ratio 可以控制特别款海报为 16:9 比例 */
     ]
   },
   {
-    key:"playlist-motion",
+    key:"Brother_Card",
     name:"兄弟卡",
-    image:"./动态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"XDK-001", image:["./动态歌单模板.webp"], color:"#6E3B5C"},
-      {code:"XDK-002", image:["./动态歌单模板.webp"], color:"#1C1813"},
+      {code:"XDK-001", image:["敬请期待.jpg"], color:"#6E3B5C"}
     ]
   },
   {
-    key:"playlist-static",
+    key:"Sponsored_Wall",
     name:"冠名墙",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"GMW-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
-      {code:"GMW-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
+      {code:"GMW-001", image:["敬请期待.jpg"], color:"#9C6B30"}
     ]
   },
   {
-    key:"upgrade",
+    key:"Upgrade_Crown",
     name:"升级冠",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"UPG-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
-      {code:"UPG-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
+      {code:"UPG-001", image:["敬请期待.jpg"], color:"#9C6B30"},
+      {code:"UPG-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
-    key:"playlist-tpl",
+    key:"Playlist",
     name:"歌单模板",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"TPL-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
-      {code:"TPL-002", image:["静态歌单模板.webp"], color:"#C8472B"},
+      {code:"TPL-001", image:["敬请期待.jpg"], color:"#2B3A67"},
+      {code:"TPL-002", image:["敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
-    key:"auction",
+    key:"Auction",
     name:"拍卖模板",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"AUC-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
-      {code:"AUC-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
+      {code:"AUC-001", image:["敬请期待.jpg"], color:"#9C6B30"},
+      {code:"AUC-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
-    key:"welfare",
+    key:"Benefits",
     name:"福利模板",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"WEL-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
-      {code:"WEL-002", image:["静态歌单模板.webp"], color:"#C8472B"},
+      {code:"WEL-001", image:["敬请期待.jpg"], color:"#2B3A67"},
+      {code:"WEL-002", image:["敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
-    key:"room-bg",
+    key:"Room_Background",
     name:"厅背景图",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"RBG-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
-      {code:"RBG-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
+      {code:"RBG-001", image:["敬请期待.jpg"], color:"#9C6B30"},
+      {code:"RBG-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
-    key:"live-cover",
+    key:"Live_Cover",
     name:"直播封面",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"COV-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
-      {code:"COV-002", image:["静态歌单模板.webp"], color:"#C8472B"},
+      {code:"COV-001", image:["敬请期待.jpg"], color:"#2B3A67"},
+      {code:"COV-002", image:["敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
-    key:"room-header",
+    key:"Room_Profile",
     name:"厅头模板",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"RHD-001", image:["静态歌单模板.webp"], color:"#9C6B30"},
-      {code:"RHD-002", image:["静态歌单模板.webp"], color:"#6E3B5C"},
+      {code:"RHD-001", image:["敬请期待.jpg"], color:"#9C6B30"},
+      {code:"RHD-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
-    key:"team-header",
+    key:"Team_Profile",
     name:"团头/厅头",
-    image:"静态歌单模板.webp",
+    image:"敬请期待.jpg",
     items:[
-      {code:"THD-001", image:["静态歌单模板.webp"], color:"#2B3A67"},
-      {code:"THD-002", image:["静态歌单模板.webp"], color:"#C8472B"},
+      {code:"THD-001", image:["敬请期待.jpg"], color:"#2B3A67"},
+      {code:"THD-002", image:["敬请期待.jpg"], color:"#C8472B"},
     ]
   }
 ];
