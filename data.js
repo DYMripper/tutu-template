@@ -295,7 +295,7 @@ const DATA = [
     name:"厅头模板",
     image:"./敬请期待.jpg",
     items:[
-      {code:"RHD-001", image:[""], color:"#9C6B30"}
+      {code:"RHD-001", image:["./敬请期待.jpg"], color:"#9C6B30"}
     ]
   },
   {
@@ -303,7 +303,7 @@ const DATA = [
     name:"团头/厅头",
     image:"./敬请期待.jpg",
     items:[
-      {code:"THD-001", image:[""], color:"#2B3A67"}
+      {code:"THD-001", image:["./敬请期待.jpg"], color:"#2B3A67"}
     ]
   }
 ];
