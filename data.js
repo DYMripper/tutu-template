@@ -221,97 +221,97 @@ const DATA = [
   {
     key:"Sister_Card",
     name:"闺蜜卡",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"GMF-001", image:["敬请期待.jpg"], color:"#2B3A67", ratio:"16/9"} /* ratio 可以控制特别款海报为 16:9 比例 */
+      {code:"GMF-001", image:["./敬请期待.jpg"], color:"#2B3A67", ratio:"16/9"} /* ratio 可以控制特别款海报为 16:9 比例 */
     ]
   },
   {
     key:"Brother_Card",
     name:"兄弟卡",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"XDK-001", image:["敬请期待.jpg"], color:"#6E3B5C"}
+      {code:"XDK-001", image:["./敬请期待.jpg"], color:"#6E3B5C"}
     ]
   },
   {
     key:"Sponsored_Wall",
     name:"冠名墙",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"GMW-001", image:["敬请期待.jpg"], color:"#9C6B30"}
+      {code:"GMW-001", image:["./敬请期待.jpg"], color:"#9C6B30"}
     ]
   },
   {
     key:"Upgrade_Crown",
     name:"升级冠",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"UPG-001", image:["敬请期待.jpg"], color:"#9C6B30"},
-      {code:"UPG-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
+      {code:"UPG-001", image:["./敬请期待.jpg"], color:"#9C6B30"},
+      {code:"UPG-002", image:["./敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
     key:"Playlist",
     name:"歌单模板",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"TPL-001", image:["敬请期待.jpg"], color:"#2B3A67"},
-      {code:"TPL-002", image:["敬请期待.jpg"], color:"#C8472B"},
+      {code:"TPL-001", image:["./敬请期待.jpg"], color:"#2B3A67"},
+      {code:"TPL-002", image:["./敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
     key:"Auction",
     name:"拍卖模板",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"AUC-001", image:["敬请期待.jpg"], color:"#9C6B30"},
-      {code:"AUC-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
+      {code:"AUC-001", image:["./敬请期待.jpg"], color:"#9C6B30"},
+      {code:"AUC-002", image:["./敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
     key:"Benefits",
     name:"福利模板",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"WEL-001", image:["敬请期待.jpg"], color:"#2B3A67"},
-      {code:"WEL-002", image:["敬请期待.jpg"], color:"#C8472B"},
+      {code:"WEL-001", image:["./敬请期待.jpg"], color:"#2B3A67"},
+      {code:"WEL-002", image:["./敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
     key:"Room_Background",
     name:"厅背景图",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"RBG-001", image:["敬请期待.jpg"], color:"#9C6B30"},
-      {code:"RBG-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
+      {code:"RBG-001", image:["./敬请期待.jpg"], color:"#9C6B30"},
+      {code:"RBG-002", image:["./敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
     key:"Live_Cover",
     name:"直播封面",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"COV-001", image:["敬请期待.jpg"], color:"#2B3A67"},
-      {code:"COV-002", image:["敬请期待.jpg"], color:"#C8472B"},
+      {code:"COV-001", image:["./敬请期待.jpg"], color:"#2B3A67"},
+      {code:"COV-002", image:["./敬请期待.jpg"], color:"#C8472B"},
     ]
   },
   {
     key:"Room_Profile",
     name:"厅头模板",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"RHD-001", image:["敬请期待.jpg"], color:"#9C6B30"},
-      {code:"RHD-002", image:["敬请期待.jpg"], color:"#6E3B5C"},
+      {code:"RHD-001", image:["./敬请期待.jpg"], color:"#9C6B30"},
+      {code:"RHD-002", image:["./敬请期待.jpg"], color:"#6E3B5C"},
     ]
   },
   {
     key:"Team_Profile",
     name:"团头/厅头",
-    image:"敬请期待.jpg",
+    image:"./敬请期待.jpg",
     items:[
-      {code:"THD-001", image:["敬请期待.jpg"], color:"#2B3A67"},
-      {code:"THD-002", image:["敬请期待.jpg"], color:"#C8472B"},
+      {code:"THD-001", image:["./敬请期待.jpg"], color:"#2B3A67"},
+      {code:"THD-002", image:["./敬请期待.jpg"], color:"#C8472B"},
     ]
   }
 ];
