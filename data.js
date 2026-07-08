@@ -17,7 +17,7 @@ const DATA = [
   {
     key:"Sponsored_Card",
     name:"冠名卡（可改冠歌/情侣卡）",
-    image:"./Sponsored_Card.jpg", /* 分类封面大图 */
+    image:"./Sponsored_Card_Cover.jpg", /* 分类封面大图 */
     items:[
       {code:"冠名卡-187", image:["./Sponsored_Card_Template/187.2.jpg"], color:"#C8472B"},
       {code:"冠名卡-187", image:["./Sponsored_Card_Template/187.1.jpg"], color:"#C8472B"},
@@ -253,9 +253,45 @@ const DATA = [
   {
     key:"Playlist",
     name:"歌单模板",
-    image:"./敬请期待.jpg",
+    image:"./Playlist_Cover.jpg",
     items:[
-      {code:"TPL-001", image:["./敬请期待.jpg"], color:"#2B3A67"}
+      {code:"歌单-001", image:["./Playlist_Template/1.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-002", image:["./Playlist_Template/2.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-003", image:["./Playlist_Template/3.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-004", image:["./Playlist_Template/4.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-005", image:["./Playlist_Template/5.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-006", image:["./Playlist_Template/6.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-007", image:["./Playlist_Template/7.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-008", image:["./Playlist_Template/8.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-009", image:["./Playlist_Template/9.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-010", image:["./Playlist_Template/10.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-011", image:["./Playlist_Template/11.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-012", image:["./Playlist_Template/12.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-013", image:["./Playlist_Template/13.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-014", image:["./Playlist_Template/14.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-015", image:["./Playlist_Template/15.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-016", image:["./Playlist_Template/16.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-017", image:["./Playlist_Template/17.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-018", image:["./Playlist_Template/18.1.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-019", image:["./Playlist_Template/19.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-020", image:["./Playlist_Template/20.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-021", image:["./Playlist_Template/21.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-022", image:["./Playlist_Template/22.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-023", image:["./Playlist_Template/23.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-024", image:["./Playlist_Template/24.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-025", image:["./Playlist_Template/25.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-026", image:["./Playlist_Template/26.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-027", image:["./Playlist_Template/27.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-028", image:["./Playlist_Template/28.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-029", image:["./Playlist_Template/29.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-030", image:["./Playlist_Template/30.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-031", image:["./Playlist_Template/31.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-032", image:["./Playlist_Template/32.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-033", image:["./Playlist_Template/33.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-034", image:["./Playlist_Template/34.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-035", image:["./Playlist_Template/35.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-036", image:["./Playlist_Template/36.jpg"], color:"#1c5dbeff"},
+      {code:"歌单-037", image:["./Playlist_Template/37.jpg"], color:"#1c5dbeff"}
     ]
   },
   {
