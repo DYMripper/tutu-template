@@ -416,7 +416,7 @@ const DATA = [
     ]
   },
   {
-    key:"Room_Profile",
+    key:"Room_Avatar",
     name:"厅头模板",
     image:"./敬请期待.jpg",
     items:[
@@ -424,11 +424,38 @@ const DATA = [
     ]
   },
   {
-    key:"Team_Profile",
-    name:"团头/厅头",
-    image:"./敬请期待.jpg",
+    key:"Team_Avatar",
+    name:"团头/麦位头像",
+    image:"./Team_Avatar_Cover.jpg",
     items:[
-      {code:"THD-001", image:["./敬请期待.jpg"], color:"#9dada2ff"}
+      {code:"团麦头-028", image:["./Team_Avatar_Template/28.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-027", image:["./Team_Avatar_Template/27.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-026", image:["./Team_Avatar_Template/26.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-025", image:["./Team_Avatar_Template/25.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-024", image:["./Team_Avatar_Template/24.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-023", image:["./Team_Avatar_Template/23.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-022", image:["./Team_Avatar_Template/22.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-021", image:["./Team_Avatar_Template/21.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-020", image:["./Team_Avatar_Template/20.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-019", image:["./Team_Avatar_Template/19.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-018", image:["./Team_Avatar_Template/18.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-017", image:["./Team_Avatar_Template/17.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-016", image:["./Team_Avatar_Template/16.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-015", image:["./Team_Avatar_Template/15.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-014", image:["./Team_Avatar_Template/14.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-013", image:["./Team_Avatar_Template/13.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-012", image:["./Team_Avatar_Template/12.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-011", image:["./Team_Avatar_Template/11.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-010", image:["./Team_Avatar_Template/10.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-009", image:["./Team_Avatar_Template/9.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-008", image:["./Team_Avatar_Template/8.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-007", image:["./Team_Avatar_Template/7.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-006", image:["./Team_Avatar_Template/6.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-005", image:["./Team_Avatar_Template/5.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-004", image:["./Team_Avatar_Template/4.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-003", image:["./Team_Avatar_Template/3.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-002", image:["./Team_Avatar_Template/2.jpg"], color:"#9dada2ff"},
+      {code:"团麦头-001", image:["./Team_Avatar_Template/1.jpg"], color:"#9dada2ff"}
     ]
   }
 ];
