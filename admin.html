@@ -261,7 +261,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        const key = `images/${categoryKey}/${code}-${i + 1}.${ext}`;
+        const key = `${categoryKey}/${code}-${i + 1}.${ext}`;
         await uploadOne(file, key, (info) => {
           progressFill.style.width = (((i + info.percent) / files.length) * 100) + '%';
         });
@@ -309,7 +309,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
         // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
-        const key = `images/${categoryKey}/${manualPrefix}-${file.name}`;
+        const key = `${categoryKey}/${manualPrefix}-${file.name}`;
         await uploadOne(file, key, (info) => {
           progressFill.style.width = (((i + info.percent) / parsedFiles.length) * 100) + '%';
         });
