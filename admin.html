@@ -130,10 +130,10 @@
 
 <script>
 // ------- 这三项换成你自己第三步/第一步拿到的信息 -------
-const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com"; // 云函数的函数URL地址
-const DATA_JSON_URL = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
-const ADMIN_PASSWORD = "970816"; // 只做误传防护，不是安全措施
-const API_SECRET = "woaiwm970816"; // 必须跟云函数环境变量 API_SECRET_KEY 完全一样
+const API_BASE = "https://REPLACE_WITH_YOUR_APIGW_URL"; // 云函数的函数URL地址
+const DATA_JSON_URL = "https://REPLACE_WITH_YOUR_BUCKET.cos.REPLACE_REGION.myqcloud.com/data.json";
+const ADMIN_PASSWORD = "REPLACE_WITH_YOUR_OWN_PASSWORD"; // 只做误传防护，不是安全措施
+const API_SECRET = "REPLACE_WITH_A_SECRET_STRING"; // 必须跟云函数环境变量 API_SECRET_KEY 完全一样
 // --------------------------------------------------
 
 const gate = document.getElementById('gate');
@@ -235,9 +235,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       getAuthorization: (options, callback) => {
         const c = credData.credential;
         callback({
-          TmpSecretId: c.tmpSecretId,
-          TmpSecretKey: c.tmpSecretKey,
-          SecurityToken: c.sessionToken,
+          TmpSecretId: c.credentials.tmpSecretId,
+          TmpSecretKey: c.credentials.tmpSecretKey,
+          SecurityToken: c.credentials.sessionToken,
           StartTime: c.startTime,
           ExpiredTime: c.expiredTime,
         });
