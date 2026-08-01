@@ -507,4 +507,11 @@ document.addEventListener('mouseup', () => {
 // -------------------------------------------------------------
 // 首次启动加载：初始化渲染首页
 // -------------------------------------------------------------
-renderHome();
+let DATA = [];
+
+async function loadDataAndRender() {
+  const res = await fetch(DATA_JSON_URL_PUBLIC + "?t=" + Date.now()); // 加时间戳防缓存
+  DATA = await res.json();
+  renderHome();
+}
+loadDataAndRender();
