@@ -143,3 +143,5 @@ vite.config.ts.timestamp-*
 .vite/
 
 index_backup.html
+
+Room_Avatar_Template/
