@@ -507,11 +507,23 @@ document.addEventListener('mouseup', () => {
 // -------------------------------------------------------------
 // 首次启动加载：初始化渲染首页
 // -------------------------------------------------------------
+const DATA_JSON_URL_PUBLIC = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
+
 let DATA = [];
 
 async function loadDataAndRender() {
-  const res = await fetch(DATA_JSON_URL_PUBLIC + "?t=" + Date.now()); // 加时间戳防缓存
-  DATA = await res.json();
-  renderHome();
+  try {
+    const res = await fetch(DATA_JSON_URL_PUBLIC + "?t=" + Date.now());
+    console.log("status:", res.status);
+    if (!res.ok) {
+      throw new Error("data.json加载失败");
+    }
+    DATA = await res.json();
+    console.log("DATA:", DATA);
+    renderHome();
+  } catch (err) {
+    console.error(err);
+  }
 }
+
 loadDataAndRender();
