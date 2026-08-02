@@ -126,13 +126,21 @@
     <button class="primary" id="submitBtn">上传</button>
     <div class="progressBar" id="progressBar"><div id="progressFill"></div></div>
     <div id="status"></div>
+
+    <fieldset style="margin-top:32px;">
+      <legend>删除模板</legend>
+      <label>选分类查看模板列表</label>
+      <select id="deleteCatSelect"></select>
+      <input type="text" id="deleteSearchInput" placeholder="按编号搜索…" style="margin-top:10px;">
+      <div id="deleteList" style="margin-top:14px; display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;"></div>
+    </fieldset>
   </div>
 </div>
 
 <script>
 // ------- 这三项换成你自己第三步/第一步拿到的信息 -------
-const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com"; // 云函数的函数URL地址
-const DATA_JSON_URL = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
+const API_BASE = "https://REPLACE_WITH_YOUR_APIGW_URL"; // 云函数的函数URL地址
+const DATA_JSON_URL = "https://REPLACE_WITH_YOUR_BUCKET.cos.REPLACE_REGION.myqcloud.com/data.json";
 let adminToken = null; // 登录成功后云函数发的通行证，只存在内存里，刷新页面就要重新登录
 // --------------------------------------------------
 
@@ -186,6 +194,7 @@ async function loadCategories() {
     catSelect.innerHTML = list.map(c => `<option value="${c.key}" data-name="${c.name}">${c.name}</option>`).join('');
     document.getElementById('existingCatNames').textContent = list.map(c => c.name).join('、');
     fillPrefixFromSelectedCategory();
+    fillDeleteCatSelect();
   } catch (e) {
     catSelect.innerHTML = '<option value="">（读取分类失败，可以直接新建分类）</option>';
   }
@@ -201,6 +210,67 @@ function fillPrefixFromSelectedCategory() {
   document.getElementById('prefixInput').value = m ? m[1] : '';
 }
 catSelect.addEventListener('change', fillPrefixFromSelectedCategory);
+
+// ---- 删除模板 ----
+const deleteCatSelect = document.getElementById('deleteCatSelect');
+const deleteList = document.getElementById('deleteList');
+
+function fillDeleteCatSelect() {
+  const keepSelection = deleteCatSelect.value;
+  deleteCatSelect.innerHTML = categoriesData.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+  if (keepSelection && categoriesData.some(c => c.key === keepSelection)) {
+    deleteCatSelect.value = keepSelection;
+  }
+  renderDeleteList();
+}
+deleteCatSelect.addEventListener('change', renderDeleteList);
+const deleteSearchInput = document.getElementById('deleteSearchInput');
+deleteSearchInput.addEventListener('input', renderDeleteList);
+
+function renderDeleteList() {
+  const cat = categoriesData.find((c) => c.key === deleteCatSelect.value);
+  deleteList.innerHTML = '';
+  if (!cat || cat.items.length === 0) {
+    deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">这个分类下还没有模板</div>';
+    return;
+  }
+  const query = deleteSearchInput.value.trim().toLowerCase();
+  const filtered = query ? cat.items.filter((it) => it.code.toLowerCase().includes(query)) : cat.items;
+  if (filtered.length === 0) {
+    deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">没有匹配的编号</div>';
+    return;
+  }
+  filtered.forEach((item) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:6px; padding:8px 10px;';
+    const firstImg = Array.isArray(item.image) ? item.image[0] : item.image;
+    const thumbHtml = firstImg
+      ? `<img src="${firstImg}" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
+      : `<div style="width:44px;height:44px;border-radius:4px;background:${item.color || '#ccc'};flex-shrink:0;"></div>`;
+    row.innerHTML = `${thumbHtml}<div style="flex:1;font-family:'Space Mono',monospace;font-size:13px;">${item.code}</div><button class="link delBtn" style="color:var(--accent);">删除</button>`;
+    row.querySelector('.delBtn').addEventListener('click', () => handleDeleteItem(cat.key, item, row));
+    deleteList.appendChild(row);
+  });
+}
+
+async function handleDeleteItem(categoryKey, item, rowEl) {
+  const sure = confirm(`确定要删除「${item.code}」这一条吗？图片也会从COS一起删掉，不可恢复。`);
+  if (!sure) return;
+  rowEl.style.opacity = '0.5';
+  try {
+    const res = await fetch(API_BASE + '/deleteitem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, images: item.image }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '删除失败');
+    await loadCategories();
+  } catch (err) {
+    alert('删除失败：' + err.message);
+    rowEl.style.opacity = '1';
+  }
+}
 
 const batchModeCheck = document.getElementById('batchModeCheck');
 const singleCodeBox = document.getElementById('singleCodeBox');
