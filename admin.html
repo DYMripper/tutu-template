@@ -47,6 +47,14 @@
   #status.ok{color:#2E7D32;}
   #status.err{color:var(--accent);}
 
+  .tabs{display:flex; gap:8px; margin-bottom:24px; border-bottom:1.5px solid var(--line);}
+  .tabBtn{
+    appearance:none; border:none; background:none; color:var(--ink-soft);
+    font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+    padding:10px 4px; margin-right:20px; border-bottom:3px solid transparent; margin-bottom:-1.5px;
+  }
+  .tabBtn.active{color:var(--accent); border-bottom-color:var(--accent);}
+
   .progressBar{height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:10px; display:none;}
   .progressBar > div{height:100%; width:0%; background:var(--accent); transition:width .2s ease;}
 </style>
@@ -64,82 +72,86 @@
   </div>
 
   <div id="app" style="display:none;">
-    <h1>新增模板</h1>
-    <div class="sub">选分类、填编号、传图，几秒后主站就会更新</div>
+    <h1 id="pageTitle">荼荼 · 上传后台</h1>
+    <div class="sub" id="pageSub">选分类、填编号、传图，几秒后主站就会更新</div>
 
-    <label style="display:flex; align-items:center; gap:8px; margin-bottom:20px; font-size:14px; color:var(--ink);">
-      <input type="checkbox" id="batchMode" style="width:16px;height:16px;">
-      批量模式：一次选多张图，每张图各自生成一个独立新模板（编号从文件名里的数字自动提取）
-    </label>
+    <div class="tabs">
+      <button class="tabBtn active" id="tabUpload">新增模板</button>
+      <button class="tabBtn" id="tabDelete">删除模板</button>
+    </div>
 
-    <fieldset>
-      <legend>分类</legend>
-      <select id="catSelect"></select>
-      <button class="link" id="newCatToggle" style="margin-top:10px;">+ 新建分类</button>
-      <div id="newCatBox">
-        <label>分类名称（中文，比如 歌单模板）</label>
-        <input type="text" id="newCatName" placeholder="歌单模板">
-        <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
-          已有分类：<span id="existingCatNames"></span> —— 新建前请确认不是其中之一打错字了
+    <div id="uploadPanel">
+      <fieldset>
+        <legend>分类</legend>
+        <select id="catSelect"></select>
+        <button class="link" id="newCatToggle" style="margin-top:10px;">+ 新建分类</button>
+        <div id="newCatBox">
+          <label>分类名称（中文，比如 歌单模板）</label>
+          <input type="text" id="newCatName" placeholder="歌单模板">
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+            已有分类：<span id="existingCatNames"></span> —— 新建前请确认不是其中之一打错字了
+          </div>
         </div>
-      </div>
-    </fieldset>
+      </fieldset>
 
-    <fieldset>
-      <legend>模板信息</legend>
-      <label style="display:flex; align-items:center; gap:8px;">
-        <input type="checkbox" id="batchModeCheck" style="width:auto;">
-        批量模式：选中的每张图片各自变成一个新模板，编号自动依次生成
-      </label>
+      <fieldset>
+        <legend>模板信息</legend>
+        <label style="display:flex; align-items:center; gap:8px;">
+          <input type="checkbox" id="batchModeCheck" style="width:auto;">
+          批量模式：选中的每张图片各自变成一个新模板，编号自动依次生成
+        </label>
 
-      <div id="singleCodeBox">
-        <label>编号</label>
-        <input type="text" id="codeInput" placeholder="例如 015">
-      </div>
-      <div id="batchPrefixBox" style="display:none;">
-        <label>编号前缀（比如"冠名卡"，图片文件名必须是纯数字，如 1.jpg 或 2.1.jpg）</label>
-        <input type="text" id="prefixInput" placeholder="例如 冠名卡">
-      </div>
-
-      <div class="row">
-        <div>
-          <label>比例</label>
-          <select id="ratioSelect">
-            <option value="3/4">3 : 4（默认）</option>
-            <option value="1/1">1 : 1</option>
-            <option value="9/16">9 : 16</option>
-            <option value="16/9">16 : 9</option>
-          </select>
+        <div id="singleCodeBox">
+          <label>编号</label>
+          <input type="text" id="codeInput" placeholder="例如 015">
         </div>
-        <div>
-          <label>兜底色块（图片加载前显示）</label>
-          <input type="color" id="colorInput" value="#C8472B">
+        <div id="batchPrefixBox" style="display:none;">
+          <label>编号前缀（比如"冠名卡"，图片文件名必须是纯数字，如 1.jpg 或 2.1.jpg）</label>
+          <input type="text" id="prefixInput" placeholder="例如 冠名卡">
         </div>
-      </div>
-    </fieldset>
 
-    <fieldset>
-      <legend id="fileFieldsetLegend">图片（可多选，长图/多图模板可以一次选多张）</legend>
-      <input type="file" id="fileInput" accept="image/*" multiple>
-    </fieldset>
+        <div class="row">
+          <div>
+            <label>比例</label>
+            <select id="ratioSelect">
+              <option value="3/4">3 : 4（默认）</option>
+              <option value="1/1">1 : 1</option>
+              <option value="9/16">9 : 16</option>
+              <option value="16/9">16 : 9</option>
+            </select>
+          </div>
+          <div>
+            <label>兜底色块（图片加载前显示）</label>
+            <input type="color" id="colorInput" value="#C8472B">
+          </div>
+        </div>
+      </fieldset>
 
-    <button class="primary" id="submitBtn">上传</button>
-    <div class="progressBar" id="progressBar"><div id="progressFill"></div></div>
-    <div id="status"></div>
+      <fieldset>
+        <legend id="fileFieldsetLegend">图片（可多选，长图/多图模板可以一次选多张）</legend>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+      </fieldset>
 
-    <fieldset style="margin-top:32px;">
-      <legend>删除模板</legend>
-      <label>选分类查看模板列表</label>
-      <select id="deleteCatSelect"></select>
-      <input type="text" id="deleteSearchInput" placeholder="按编号搜索…" style="margin-top:10px;">
-      <div id="deleteList" style="margin-top:14px; display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;"></div>
-    </fieldset>
+      <button class="primary" id="submitBtn">上传</button>
+      <div class="progressBar" id="progressBar"><div id="progressFill"></div></div>
+      <div id="status"></div>
+    </div>
+
+    <div id="deletePanel" style="display:none;">
+      <fieldset>
+        <legend>模板列表</legend>
+        <label>选分类查看模板列表</label>
+        <select id="deleteCatSelect"></select>
+        <input type="text" id="deleteSearchInput" placeholder="按编号搜索…" style="margin-top:10px;">
+        <div id="deleteList" style="margin-top:14px; display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;"></div>
+      </fieldset>
+    </div>
   </div>
 </div>
 
 <script>
 // ------- 这三项换成你自己第三步/第一步拿到的信息 -------
-const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com"; // 云函数的函数URL地址
+const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com";
 const DATA_JSON_URL = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
 let adminToken = null; // 登录成功后云函数发的通行证，只存在内存里，刷新页面就要重新登录
 // --------------------------------------------------
@@ -171,6 +183,32 @@ document.getElementById('pwBtn').addEventListener('click', async () => {
 });
 
 const catSelect = document.getElementById('catSelect');
+
+// ---- 标签页切换：新增 / 删除 ----
+const tabUpload = document.getElementById('tabUpload');
+const tabDelete = document.getElementById('tabDelete');
+const uploadPanel = document.getElementById('uploadPanel');
+const deletePanel = document.getElementById('deletePanel');
+const pageTitle = document.getElementById('pageTitle');
+const pageSub = document.getElementById('pageSub');
+
+tabUpload.addEventListener('click', () => {
+  tabUpload.classList.add('active');
+  tabDelete.classList.remove('active');
+  uploadPanel.style.display = 'block';
+  deletePanel.style.display = 'none';
+  pageTitle.textContent = '新增模板';
+  pageSub.textContent = '选分类、填编号、传图，几秒后主站就会更新';
+});
+tabDelete.addEventListener('click', () => {
+  tabDelete.classList.add('active');
+  tabUpload.classList.remove('active');
+  deletePanel.style.display = 'block';
+  uploadPanel.style.display = 'none';
+  pageTitle.textContent = '删除模板';
+  pageSub.textContent = '选分类、找到要删的模板，点删除会同时清掉图片和记录';
+});
+tabUpload.click(); // 默认打开"新增"这个标签页
 
 // 简单的编辑距离算法：用来判断新建分类的名字是不是跟已有的很像（可能是打错字）
 function levenshtein(a, b) {
@@ -302,8 +340,8 @@ function setStatus(text, kind) {
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const usingNewCat = newCatBox.style.display === 'block';
-  const categoryKey = usingNewCat ? categoryName : catSelect.value;
   const categoryName = usingNewCat ? document.getElementById('newCatName').value.trim() : catSelect.selectedOptions[0]?.dataset.name;
+  const categoryKey = usingNewCat ? categoryName : catSelect.value;
   const ratio = document.getElementById('ratioSelect').value;
   const color = document.getElementById('colorInput').value;
   const files = document.getElementById('fileInput').files;
