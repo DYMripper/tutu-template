@@ -77,10 +77,11 @@
       <select id="catSelect"></select>
       <button class="link" id="newCatToggle" style="margin-top:10px;">+ 新建分类</button>
       <div id="newCatBox">
-        <label>分类标识（英文/拼音，不能和已有的重复，比如 gedan）</label>
-        <input type="text" id="newCatKey" placeholder="gedan">
-        <label>分类显示名称</label>
-        <input type="text" id="newCatName" placeholder="歌单卡">
+        <label>分类名称（中文，比如 歌单模板）</label>
+        <input type="text" id="newCatName" placeholder="歌单模板">
+        <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+          已有分类：<span id="existingCatNames"></span> —— 新建前请确认不是其中之一打错字了
+        </div>
       </div>
     </fieldset>
 
@@ -130,25 +131,52 @@
 
 <script>
 // ------- 这三项换成你自己第三步/第一步拿到的信息 -------
-const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com"; // 云函数的函数URL地址
-const DATA_JSON_URL = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
-const ADMIN_PASSWORD = "970816"; // 只做误传防护，不是安全措施
-const API_SECRET = "woaiwm970816"; // 必须跟云函数环境变量 API_SECRET_KEY 完全一样
+const API_BASE = "https://REPLACE_WITH_YOUR_APIGW_URL"; // 云函数的函数URL地址
+const DATA_JSON_URL = "https://REPLACE_WITH_YOUR_BUCKET.cos.REPLACE_REGION.myqcloud.com/data.json";
+let adminToken = null; // 登录成功后云函数发的通行证，只存在内存里，刷新页面就要重新登录
 // --------------------------------------------------
 
 const gate = document.getElementById('gate');
 const app = document.getElementById('app');
-document.getElementById('pwBtn').addEventListener('click', () => {
-  if (document.getElementById('pwInput').value === ADMIN_PASSWORD) {
+document.getElementById('pwBtn').addEventListener('click', async () => {
+  const pwBtn = document.getElementById('pwBtn');
+  const pwErr = document.getElementById('pwErr');
+  pwBtn.disabled = true;
+  pwErr.textContent = '';
+  try {
+    const res = await fetch(API_BASE + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: document.getElementById('pwInput').value }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '密码不对');
+    adminToken = data.token;
     gate.style.display = 'none';
     app.style.display = 'block';
     loadCategories();
-  } else {
-    document.getElementById('pwErr').textContent = '密码不对，再试一次';
+  } catch (err) {
+    pwErr.textContent = err.message;
+  } finally {
+    pwBtn.disabled = false;
   }
 });
 
 const catSelect = document.getElementById('catSelect');
+
+// 简单的编辑距离算法：用来判断新建分类的名字是不是跟已有的很像（可能是打错字）
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
 let categoriesData = [];
 async function loadCategories() {
   try {
@@ -156,6 +184,7 @@ async function loadCategories() {
     const list = await res.json();
     categoriesData = list;
     catSelect.innerHTML = list.map(c => `<option value="${c.key}" data-name="${c.name}">${c.name}</option>`).join('');
+    document.getElementById('existingCatNames').textContent = list.map(c => c.name).join('、');
     fillPrefixFromSelectedCategory();
   } catch (e) {
     catSelect.innerHTML = '<option value="">（读取分类失败，可以直接新建分类）</option>';
@@ -203,7 +232,7 @@ function setStatus(text, kind) {
 
 document.getElementById('submitBtn').addEventListener('click', async () => {
   const usingNewCat = newCatBox.style.display === 'block';
-  const categoryKey = usingNewCat ? document.getElementById('newCatKey').value.trim() : catSelect.value;
+  const categoryKey = usingNewCat ? categoryName : catSelect.value;
   const categoryName = usingNewCat ? document.getElementById('newCatName').value.trim() : catSelect.selectedOptions[0]?.dataset.name;
   const ratio = document.getElementById('ratioSelect').value;
   const color = document.getElementById('colorInput').value;
@@ -213,6 +242,16 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   if (!categoryKey || files.length === 0) {
     setStatus('分类、图片都是必填的', 'err');
     return;
+  }
+  if (usingNewCat) {
+    const similar = categoriesData.find((c) => c.name !== categoryName && levenshtein(c.name, categoryName) <= 1);
+    if (similar) {
+      const proceed = confirm(`已有一个很像的分类叫「${similar.name}」，你填的是「${categoryName}」，确定不是打错字、真的要新建一个不一样的分类吗？`);
+      if (!proceed) {
+        setStatus('已取消，请检查分类名称是不是打错字了', 'err');
+        return;
+      }
+    }
   }
   if (!isBatch && !document.getElementById('codeInput').value.trim()) {
     setStatus('编号是必填的', 'err');
@@ -227,7 +266,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 
   try {
     setStatus('正在申请上传权限…');
-    const credRes = await fetch(API_BASE + '/credential', { headers: { 'X-Admin-Key': API_SECRET } });
+    const credRes = await fetch(API_BASE + '/credential', { headers: { 'X-Admin-Token': adminToken } });
     const credData = await credRes.json();
     if (!credData.ok) throw new Error(credData.message || '申请权限失败');
 
@@ -251,7 +290,10 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
           (err) => (err ? reject(err) : resolve())
         );
       });
-    const urlOf = (key) => `https://${credData.bucket}.cos.${credData.region}.myqcloud.com/${key}`;
+    const urlOf = (key) => {
+      const encodedPath = key.split('/').map(encodeURIComponent).join('/'); // 中文文件夹/文件名要逐段转义，不然链接可能打不开
+      return `https://${credData.bucket}.cos.${credData.region}.myqcloud.com/${encodedPath}`;
+    };
 
     if (!isBatch) {
       // ---- 单个模板：多张图归到同一个编号下 ----
@@ -271,7 +313,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       setStatus('图片传完了，正在更新模板列表…');
       const addRes = await fetch(API_BASE + '/additem', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': API_SECRET },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
         body: JSON.stringify({ categoryKey, categoryName, code, images: uploadedKeys, color, ratio }),
       });
       const addData = await addRes.json();
@@ -319,7 +361,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       setStatus('图片传完了，正在批量更新模板列表…');
       const addRes = await fetch(API_BASE + '/addbatch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Key': API_SECRET },
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
         body: JSON.stringify({ categoryKey, categoryName, items }),
       });
       const addData = await addRes.json();
