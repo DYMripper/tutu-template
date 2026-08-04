@@ -411,6 +411,15 @@
   }
   .lightbox-close:hover{background:#F1ECE1; color:#1C1813;}
 
+  /* 桌面端（视口宽度≥768px）放大预览弹窗；768px以下（基本涵盖所有手机）维持原来的手机端样式不变 */
+  @media (min-width: 768px) {
+    .lightbox-inner {
+      max-width: min(900px, 85vw);
+    }
+    .lightbox-scroll-container {
+      max-height: 80vh;
+    }
+  }
   /* -------------------------------------------------------------
    * 7. 底部版权与无障碍动画优化
    * ------------------------------------------------------------- */
