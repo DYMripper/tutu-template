@@ -123,6 +123,10 @@
           <div>
             <label>兜底色块（图片加载前显示）</label>
             <input type="color" id="colorInput" value="#C8472B">
+            <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+              <input type="range" id="colorAlphaInput" min="0" max="100" value="100" style="flex:1;">
+              <span id="colorAlphaLabel" style="font-size:12px; color:var(--ink-soft); width:36px;">100%</span>
+            </div>
           </div>
         </div>
       </fieldset>
@@ -211,6 +215,24 @@ async function uploadToWorker(key, blob) {
   return `${API_BASE}/${encodedPath}`;
 }
 
+// 颜色小工具：<input type=color>只支持6位hex，不支持透明度，所以额外配一个透明度滑块，
+// 存进data.json时把两者拼成8位hex（跟现有分类的格式一致），读取已有颜色时反过来拆开
+function splitColorHex(color) {
+  if (!color) return { hex6: '#CFC6B3', alphaPercent: 100 };
+  const hex6 = color.slice(0, 7);
+  if (color.length === 9) {
+    const alphaPercent = Math.round((parseInt(color.slice(7, 9), 16) / 255) * 100);
+    return { hex6, alphaPercent };
+  }
+  return { hex6, alphaPercent: 100 };
+}
+function combineColorHex(hex6, alphaPercent) {
+  const alphaHex = Math.round((Number(alphaPercent) / 100) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return hex6 + alphaHex;
+}
+
 const gate = document.getElementById('gate');
 const app = document.getElementById('app');
 document.getElementById('pwBtn').addEventListener('click', async () => {
@@ -235,6 +257,10 @@ document.getElementById('pwBtn').addEventListener('click', async () => {
   } finally {
     pwBtn.disabled = false;
   }
+});
+
+document.getElementById('colorAlphaInput').addEventListener('input', (e) => {
+  document.getElementById('colorAlphaLabel').textContent = e.target.value + '%';
 });
 
 const catSelect = document.getElementById('catSelect');
@@ -299,13 +325,20 @@ async function loadCategories() {
 }
 
 // 根据当前选中的分类，从已有编号里猜出编号前缀，自动填进批量模式的"编号前缀"框（仍可手动改）
+// 同时把颜色也带出来（取这个分类现有模板用的颜色），不用每次手动调色
 function fillPrefixFromSelectedCategory() {
   const usingNewCat = newCatBox.style.display === 'block';
   if (usingNewCat) return;
   const cat = categoriesData.find(c => c.key === catSelect.value);
-  const firstCode = cat?.items?.[0]?.code;
-  const m = firstCode && String(firstCode).match(/^(.*)-\d+$/);
+  const firstItem = cat?.items?.[0];
+  const m = firstItem?.code && String(firstItem.code).match(/^(.*)-\d+$/);
   document.getElementById('prefixInput').value = m ? m[1] : '';
+  if (firstItem?.color) {
+    const { hex6, alphaPercent } = splitColorHex(firstItem.color);
+    document.getElementById('colorInput').value = hex6;
+    document.getElementById('colorAlphaInput').value = alphaPercent;
+    document.getElementById('colorAlphaLabel').textContent = alphaPercent + '%';
+  }
 }
 catSelect.addEventListener('change', fillPrefixFromSelectedCategory);
 
@@ -362,6 +395,8 @@ function toggleEditForm(categoryKey, item, rowEl) {
   // 一次只展开一个编辑表单，避免页面上同时出现多个搞混
   deleteList.querySelectorAll('.editForm').forEach((el) => el.remove());
 
+  const { hex6: editHex6, alphaPercent: editAlphaPercent } = splitColorHex(item.color);
+
   const form = document.createElement('div');
   form.className = 'editForm';
   form.style.cssText = 'border:1px dashed var(--line); border-radius:6px; padding:12px; margin-top:-4px; margin-bottom:4px; display:flex; flex-direction:column; gap:8px;';
@@ -380,7 +415,11 @@ function toggleEditForm(categoryKey, item, rowEl) {
       </div>
       <div>
         <label style="margin:0;">颜色</label>
-        <input type="color" class="editColor" value="${item.color || '#CFC6B3'}">
+        <input type="color" class="editColor" value="${editHex6}">
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+          <input type="range" class="editColorAlpha" min="0" max="100" value="${editAlphaPercent}" style="flex:1;">
+          <span class="editColorAlphaLabel" style="font-size:12px; color:var(--ink-soft); width:36px;">${editAlphaPercent}%</span>
+        </div>
       </div>
     </div>
     <label style="margin:0;">替换图片（不选就保持原图不变）</label>
@@ -393,6 +432,9 @@ function toggleEditForm(categoryKey, item, rowEl) {
   `;
   rowEl.after(form);
 
+  form.querySelector('.editColorAlpha').addEventListener('input', (e) => {
+    form.querySelector('.editColorAlphaLabel').textContent = e.target.value + '%';
+  });
   form.querySelector('.editCancelBtn').addEventListener('click', () => form.remove());
   form.querySelector('.editSaveBtn').addEventListener('click', () => saveEditForm(categoryKey, item, form, rowEl));
 }
@@ -402,7 +444,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
   const statusEl = form.querySelector('.editStatus');
   const newCode = form.querySelector('.editCode').value.trim();
   const newRatio = form.querySelector('.editRatio').value;
-  const newColor = form.querySelector('.editColor').value;
+  const newColor = combineColorHex(form.querySelector('.editColor').value, form.querySelector('.editColorAlpha').value);
   const newFiles = form.querySelector('.editFiles').files;
 
   saveBtn.disabled = true;
@@ -606,7 +648,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   const categoryName = usingNewCat ? document.getElementById('newCatName').value.trim() : catSelect.selectedOptions[0]?.dataset.name;
   const categoryKey = usingNewCat ? categoryName : catSelect.value;
   const ratio = document.getElementById('ratioSelect').value;
-  const color = document.getElementById('colorInput').value;
+  const color = combineColorHex(document.getElementById('colorInput').value, document.getElementById('colorAlphaInput').value);
   const files = document.getElementById('fileInput').files;
   const isBatch = batchModeCheck.checked;
 
