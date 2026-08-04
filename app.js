@@ -507,7 +507,7 @@ document.addEventListener('mouseup', () => {
 // -------------------------------------------------------------
 // 首次启动加载：初始化渲染首页
 // -------------------------------------------------------------
-const DATA_JSON_URL_PUBLIC = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
+const DATA_JSON_URL_PUBLIC = "https://newtutu.dymripper.com/data.json";
 
 let DATA = [];
 

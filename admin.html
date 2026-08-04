@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>荼荼 · 上传后台</title>
-<script src="https://unpkg.com/cos-js-sdk-v5/dist/cos-js-sdk-v5.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
   :root{
@@ -63,7 +62,7 @@
 
 <div class="wrap">
 
-  <!-- 简单密码门：只是防止链接被随手打开误传，不是真正的安全措施，重要数据仍靠COS/云函数权限保护 -->
+  <!-- 简单密码门：只是防止链接被随手打开误传，不是真正的安全措施，重要数据仍靠R2/Worker权限保护 -->
   <div class="gate" id="gate">
     <h1>荼荼 · 上传后台</h1>
     <input type="text" id="pwInput" placeholder="输入访问密码">
@@ -152,9 +151,9 @@
 
 <script>
 // ------- 这三项换成你自己第三步/第一步拿到的信息 -------
-const API_BASE = "https://1367851417-l5wythbzw7.ap-guangzhou.tencentscf.com";
-const DATA_JSON_URL = "https://tutu-template-1367851417.cos.ap-guangzhou.myqcloud.com/data.json";
-let adminToken = null; // 登录成功后云函数发的通行证，只存在内存里，刷新页面就要重新登录
+const API_BASE = "https://newtutu.dymripper.com";
+const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
+let adminToken = null; // 登录成功后Worker发的通行证，只存在内存里，刷新页面就要重新登录
 // --------------------------------------------------
 
 // 图片压缩：上传前把长边限制在2000px以内，JPEG按0.85质量重新编码（PNG保留原格式，只缩尺寸）
@@ -188,6 +187,19 @@ function compressImage(file, maxDim, quality) {
     };
     img.src = url;
   });
+}
+
+// 把文件直接传给 Worker（Worker自己写进R2，浏览器不用碰任何密钥），返回上传后的公开访问地址
+async function uploadToWorker(key, blob) {
+  const res = await fetch(API_BASE + '/upload?key=' + encodeURIComponent(key), {
+    method: 'POST',
+    headers: { 'X-Admin-Token': adminToken, 'Content-Type': blob.type || 'application/octet-stream' },
+    body: blob,
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.message || '上传失败');
+  const encodedPath = key.split('/').map(encodeURIComponent).join('/');
+  return `${API_BASE}/${encodedPath}`;
 }
 
 const gate = document.getElementById('gate');
@@ -385,33 +397,12 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
     let newImages = [];
     if (newFiles.length > 0) {
       statusEl.textContent = '正在上传新图片…';
-      const credRes = await fetch(API_BASE + '/credential', { headers: { 'X-Admin-Token': adminToken } });
-      const credData = await credRes.json();
-      if (!credData.ok) throw new Error(credData.message || '申请权限失败');
-      const cosClient = new COS({
-        getAuthorization: (options, callback) => {
-          const c = credData.credential;
-          callback({
-            TmpSecretId: c.credentials.tmpSecretId,
-            TmpSecretKey: c.credentials.tmpSecretKey,
-            SecurityToken: c.credentials.sessionToken,
-            StartTime: c.startTime,
-            ExpiredTime: c.expiredTime,
-          });
-        },
-      });
       for (let i = 0; i < newFiles.length; i++) {
         const file = newFiles[i];
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const key = `Templates/${categoryKey}/${newCode || item.code}-edit-${Date.now()}-${i + 1}.${ext}`;
         const toUpload = await compressImage(file, 2000, 0.85);
-        await new Promise((resolve, reject) => {
-          cosClient.putObject({ Bucket: credData.bucket, Region: credData.region, Key: key, Body: toUpload }, (err) =>
-            err ? reject(err) : resolve()
-          );
-        });
-        const encodedPath = key.split('/').map(encodeURIComponent).join('/');
-        newImages.push(`https://${credData.bucket}.cos.${credData.region}.myqcloud.com/${encodedPath}`);
+        newImages.push(await uploadToWorker(key, toUpload));
       }
     }
 
@@ -440,7 +431,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
 }
 
 async function handleDeleteItem(categoryKey, item, rowEl) {
-  const sure = confirm(`确定要删除「${item.code}」这一条吗？图片也会从COS一起删掉，不可恢复。`);
+  const sure = confirm(`确定要删除「${item.code}」这一条吗？图片也会从R2一起删掉，不可恢复。`);
   if (!sure) return;
   rowEl.style.opacity = '0.5';
   try {
@@ -537,36 +528,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   progressBar.style.display = 'block';
 
   try {
-    setStatus('正在申请上传权限…');
-    const credRes = await fetch(API_BASE + '/credential', { headers: { 'X-Admin-Token': adminToken } });
-    const credData = await credRes.json();
-    if (!credData.ok) throw new Error(credData.message || '申请权限失败');
-
-    const cos = new COS({
-      getAuthorization: (options, callback) => {
-        const c = credData.credential;
-        callback({
-          TmpSecretId: c.credentials.tmpSecretId,
-          TmpSecretKey: c.credentials.tmpSecretKey,
-          SecurityToken: c.credentials.sessionToken,
-          StartTime: c.startTime,
-          ExpiredTime: c.expiredTime,
-        });
-      },
-    });
-
-    const uploadOne = (file, key, onProgress) =>
-      new Promise((resolve, reject) => {
-        cos.putObject(
-          { Bucket: credData.bucket, Region: credData.region, Key: key, Body: file, onProgress },
-          (err) => (err ? reject(err) : resolve())
-        );
-      });
-    const urlOf = (key) => {
-      const encodedPath = key.split('/').map(encodeURIComponent).join('/'); // 中文文件夹/文件名要逐段转义，不然链接可能打不开
-      return `https://${credData.bucket}.cos.${credData.region}.myqcloud.com/${encodedPath}`;
-    };
-
     if (!isBatch) {
       // ---- 单个模板：多张图归到同一个编号下 ----
       const code = document.getElementById('codeInput').value.trim();
@@ -577,10 +538,8 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
         const key = `Templates/${categoryKey}/${code}-${i + 1}.${ext}`;
         const toUpload = await compressImage(file, 2000, 0.85);
-        await uploadOne(toUpload, key, (info) => {
-          progressFill.style.width = (((i + info.percent) / files.length) * 100) + '%';
-        });
-        uploadedKeys.push(urlOf(key));
+        uploadedKeys.push(await uploadToWorker(key, toUpload));
+        progressFill.style.width = (((i + 1) / files.length) * 100) + '%';
         setStatus(`正在上传图片 ${i + 1}/${files.length}`);
       }
       setStatus('图片传完了，正在更新模板列表…');
@@ -626,10 +585,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
         // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
         const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
         const toUpload = await compressImage(file, 2000, 0.85);
-        await uploadOne(toUpload, key, (info) => {
-          progressFill.style.width = (((i + info.percent) / parsedFiles.length) * 100) + '%';
-        });
-        items.push({ code, images: [urlOf(key)], color, ratio });
+        const imageUrl = await uploadToWorker(key, toUpload);
+        progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
+        items.push({ code, images: [imageUrl], color, ratio });
         setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
       }
       setStatus('图片传完了，正在批量更新模板列表…');

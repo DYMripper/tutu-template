@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1102.0",
+    "cos-nodejs-sdk-v5": "^3.0.0"
+  }
+}
