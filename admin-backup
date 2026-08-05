@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>荼荼 · 上传后台</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=Archivo:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+  :root{
+    --paper:#F1ECE1; --paper-deep:#E8E1D2; --ink:#1C1813; --ink-soft:#5B5448;
+    --accent:#C8472B; --line:#CFC6B3;
+  }
+  *{box-sizing:border-box;}
+  body{background:var(--paper); color:var(--ink); font-family:'Archivo',sans-serif; margin:0; min-height:100vh;}
+  .wrap{max-width:640px; margin:0 auto; padding:40px 24px 80px;}
+  h1{font-family:'Archivo Black',sans-serif; font-size:30px; margin:0 0 6px;}
+  .sub{color:var(--ink-soft); font-size:13px; font-family:'Space Mono',monospace; margin-bottom:34px;}
+
+  .gate{display:flex; flex-direction:column; gap:14px; max-width:320px; margin:80px auto;}
+  .gate input{padding:12px 14px; border:1.5px solid var(--ink); border-radius:6px; background:transparent; color:var(--ink); font-size:15px;}
+
+  fieldset{border:1.5px solid var(--line); border-radius:8px; padding:20px; margin-bottom:20px;}
+  legend{font-family:'Space Mono',monospace; font-size:12px; color:var(--ink-soft); padding:0 8px;}
+  label{display:block; font-size:13px; color:var(--ink-soft); margin:14px 0 6px;}
+  label:first-of-type{margin-top:0;}
+  input[type=text], select{
+    width:100%; padding:10px 12px; border:1.5px solid var(--ink); border-radius:6px;
+    background:var(--paper-deep); color:var(--ink); font-size:15px; font-family:inherit;
+  }
+  input[type=color]{width:56px; height:36px; border:1.5px solid var(--ink); border-radius:6px; padding:2px;}
+  input[type=file]{width:100%; font-size:13px;}
+  .row{display:flex; gap:14px;}
+  .row > div{flex:1;}
+
+  button.primary{
+    appearance:none; border:none; background:var(--accent); color:#F1ECE1;
+    padding:13px 20px; border-radius:100px; font-size:15px; font-weight:700;
+    cursor:pointer; width:100%; margin-top:8px; font-family:inherit;
+  }
+  button.primary:disabled{opacity:.5; cursor:not-allowed;}
+  button.link{appearance:none; border:none; background:none; color:var(--accent); font-size:13px; cursor:pointer; padding:0; font-family:inherit;}
+
+  #newCatBox{display:none; margin-top:10px;}
+
+  #status{margin-top:16px; font-family:'Space Mono',monospace; font-size:13px; white-space:pre-wrap;}
+  #status.ok{color:#2E7D32;}
+  #status.err{color:var(--accent);}
+
+  .tabs{display:flex; gap:8px; margin-bottom:24px; border-bottom:1.5px solid var(--line);}
+  .tabBtn{
+    appearance:none; border:none; background:none; color:var(--ink-soft);
+    font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+    padding:10px 4px; margin-right:20px; border-bottom:3px solid transparent; margin-bottom:-1.5px;
+  }
+  .tabBtn.active{color:var(--accent); border-bottom-color:var(--accent);}
+
+  .progressBar{height:6px; background:var(--line); border-radius:3px; overflow:hidden; margin-top:10px; display:none;}
+  .progressBar > div{height:100%; width:0%; background:var(--accent); transition:width .2s ease;}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <!-- 简单密码门：只是防止链接被随手打开误传，不是真正的安全措施，重要数据仍靠R2/Worker权限保护 -->
+  <div class="gate" id="gate">
+    <h1>荼荼 · 上传后台</h1>
+    <input type="password" id="pwInput" placeholder="输入访问密码">
+    <button class="primary" id="pwBtn">进入</button>
+    <div id="pwErr" style="color:var(--accent); font-size:13px;"></div>
+  </div>
+
+  <div id="app" style="display:none;">
+    <h1 id="pageTitle">荼荼 · 上传后台</h1>
+    <div class="sub" id="pageSub">选分类、填编号、传图，几秒后主站就会更新</div>
+
+    <div class="tabs">
+      <button class="tabBtn active" id="tabUpload">新增模板</button>
+      <button class="tabBtn" id="tabDelete">删除模板</button>
+      <button class="tabBtn" id="tabCatManage">分类管理</button>
+    </div>
+
+    <div id="uploadPanel">
+      <fieldset>
+        <legend>分类</legend>
+        <select id="catSelect"></select>
+        <button class="link" id="newCatToggle" style="margin-top:10px;">+ 新建分类</button>
+        <div id="newCatBox">
+          <label>分类名称（中文，比如 歌单模板）</label>
+          <input type="text" id="newCatName" placeholder="歌单模板">
+          <div style="font-size:12px; color:var(--ink-soft); margin-top:6px;">
+            已有分类：<span id="existingCatNames"></span> —— 新建前请确认不是其中之一打错字了
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>模板信息</legend>
+        <label>编号前缀（比如"冠名卡"，图片文件名必须是纯数字，如 1.jpg 或 2.1.jpg）</label>
+        <input type="text" id="prefixInput" placeholder="例如 冠名卡">
+
+        <div class="row">
+          <div>
+            <label>比例</label>
+            <select id="ratioSelect">
+              <option value="3/4">3 : 4（默认）</option>
+              <option value="1/1">1 : 1</option>
+              <option value="9/16">9 : 16</option>
+              <option value="16/9">16 : 9</option>
+            </select>
+          </div>
+          <div>
+            <label>兜底色块（图片加载前显示）</label>
+            <input type="color" id="colorInput" value="#C8472B">
+            <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+              <input type="range" id="colorAlphaInput" min="0" max="100" value="100" style="flex:1;">
+              <span id="colorAlphaLabel" style="font-size:12px; color:var(--ink-soft); width:36px;">100%</span>
+            </div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>图片（可多选，每张图各自变成一个新模板，编号从文件名里的数字自动提取）</legend>
+        <input type="file" id="fileInput" accept="image/*" multiple>
+        <div id="filePreview" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
+      </fieldset>
+
+      <button class="primary" id="submitBtn">上传</button>
+      <div class="progressBar" id="progressBar"><div id="progressFill"></div></div>
+      <div id="status"></div>
+    </div>
+
+    <div id="deletePanel" style="display:none;">
+      <fieldset>
+        <legend>模板列表</legend>
+        <label>选分类查看模板列表</label>
+        <select id="deleteCatSelect"></select>
+        <input type="text" id="deleteSearchInput" placeholder="按编号搜索…" style="margin-top:10px;">
+        <div id="deleteList" style="margin-top:14px; display:flex; flex-direction:column; gap:10px; max-height:420px; overflow-y:auto;"></div>
+      </fieldset>
+    </div>
+
+    <div id="categoryManagePanel" style="display:none;">
+      <fieldset>
+        <legend>分类顺序与名称</legend>
+        <div style="font-size:12px;color:var(--ink-soft);margin-bottom:10px;">用上下箭头调整分类在首页的显示顺序；改名字填好之后点"保存名称"</div>
+        <div id="catManageList" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </fieldset>
+    </div>
+  </div>
+</div>
+
+<script>
+// ------- 这三项换成你自己第三步/第一步拿到的信息 -------
+const API_BASE = "https://newtutu.dymripper.com";
+const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
+let adminToken = null; // 登录成功后Worker发的通行证，只存在内存里，刷新页面就要重新登录
+// --------------------------------------------------
+
+// 图片压缩：上传前把长边限制在2000px以内，JPEG按0.85质量重新编码（PNG保留原格式，只缩尺寸）
+// 压缩/读取失败时退回用原图，不阻断上传
+function compressImage(file, maxDim, quality) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let { width, height } = img;
+      const scale = Math.min(1, maxDim / Math.max(width, height));
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const isPng = file.type === 'image/png';
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(url);
+          resolve(blob || file);
+        },
+        isPng ? 'image/png' : 'image/jpeg',
+        isPng ? undefined : quality
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(file);
+    };
+    img.src = url;
+  });
+}
+
+// 把文件直接传给 Worker（Worker自己写进R2，浏览器不用碰任何密钥），返回上传后的公开访问地址
+async function uploadToWorker(key, blob) {
+  const res = await fetch(API_BASE + '/upload?key=' + encodeURIComponent(key), {
+    method: 'POST',
+    headers: { 'X-Admin-Token': adminToken, 'Content-Type': blob.type || 'application/octet-stream' },
+    body: blob,
+  });
+  const data = await res.json();
+  if (!data.ok) throw new Error(data.message || '上传失败');
+  const encodedPath = key.split('/').map(encodeURIComponent).join('/');
+  return `${API_BASE}/${encodedPath}`;
+}
+
+// 颜色小工具：<input type=color>只支持6位hex，不支持透明度，所以额外配一个透明度滑块，
+// 存进data.json时把两者拼成8位hex（跟现有分类的格式一致），读取已有颜色时反过来拆开
+function splitColorHex(color) {
+  if (!color) return { hex6: '#cfc6b3', alphaPercent: 100 };
+  const hex6 = color.slice(0, 7).toLowerCase(); // color输入框只认小写hex，大写会被浏览器静默拒绝、保留上一次的值
+  if (color.length === 9) {
+    const alphaPercent = Math.round((parseInt(color.slice(7, 9), 16) / 255) * 100);
+    return { hex6, alphaPercent };
+  }
+  return { hex6, alphaPercent: 100 };
+}
+function combineColorHex(hex6, alphaPercent) {
+  const alphaHex = Math.round((Number(alphaPercent) / 100) * 255)
+    .toString(16)
+    .padStart(2, '0');
+  return hex6 + alphaHex;
+}
+
+const gate = document.getElementById('gate');
+const app = document.getElementById('app');
+document.getElementById('pwBtn').addEventListener('click', async () => {
+  const pwBtn = document.getElementById('pwBtn');
+  const pwErr = document.getElementById('pwErr');
+  pwBtn.disabled = true;
+  pwErr.textContent = '';
+  try {
+    const res = await fetch(API_BASE + '/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: document.getElementById('pwInput').value }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '密码不对');
+    adminToken = data.token;
+    gate.style.display = 'none';
+    app.style.display = 'block';
+    loadCategories();
+  } catch (err) {
+    pwErr.textContent = err.message;
+  } finally {
+    pwBtn.disabled = false;
+  }
+});
+
+document.getElementById('colorAlphaInput').addEventListener('input', (e) => {
+  document.getElementById('colorAlphaLabel').textContent = e.target.value + '%';
+});
+
+const catSelect = document.getElementById('catSelect');
+
+// ---- 标签页切换：新增 / 删除 ----
+const tabUpload = document.getElementById('tabUpload');
+const tabDelete = document.getElementById('tabDelete');
+const tabCatManage = document.getElementById('tabCatManage');
+const uploadPanel = document.getElementById('uploadPanel');
+const deletePanel = document.getElementById('deletePanel');
+const categoryManagePanel = document.getElementById('categoryManagePanel');
+const pageTitle = document.getElementById('pageTitle');
+const pageSub = document.getElementById('pageSub');
+
+function activateTab(tabBtn, panel, title, sub) {
+  [tabUpload, tabDelete, tabCatManage].forEach((b) => b.classList.remove('active'));
+  [uploadPanel, deletePanel, categoryManagePanel].forEach((p) => (p.style.display = 'none'));
+  tabBtn.classList.add('active');
+  panel.style.display = 'block';
+  pageTitle.textContent = title;
+  pageSub.textContent = sub;
+}
+
+tabUpload.addEventListener('click', () => {
+  activateTab(tabUpload, uploadPanel, '新增模板', '选分类、填编号、传图，几秒后主站就会更新');
+});
+tabDelete.addEventListener('click', () => {
+  activateTab(tabDelete, deletePanel, '删除模板', '选分类、找到要删的模板，点删除会同时清掉图片和记录');
+});
+tabCatManage.addEventListener('click', () => {
+  activateTab(tabCatManage, categoryManagePanel, '分类管理', '调整分类顺序、修改分类名称');
+  renderCatManageList();
+});
+tabUpload.click(); // 默认打开"新增"这个标签页
+
+// 简单的编辑距离算法：用来判断新建分类的名字是不是跟已有的很像（可能是打错字）
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+let categoriesData = [];
+async function loadCategories() {
+  try {
+    const res = await fetch(DATA_JSON_URL + '?t=' + Date.now());
+    const list = await res.json();
+    categoriesData = list;
+    catSelect.innerHTML = list.map(c => `<option value="${c.key}" data-name="${c.name}">${c.name}</option>`).join('');
+    document.getElementById('existingCatNames').textContent = list.map(c => c.name).join('、');
+    fillPrefixFromSelectedCategory();
+    fillDeleteCatSelect();
+  } catch (e) {
+    catSelect.innerHTML = '<option value="">（读取分类失败，可以直接新建分类）</option>';
+  }
+}
+
+// 根据当前选中的分类，从已有编号里猜出编号前缀，自动填进批量模式的"编号前缀"框（仍可手动改）
+// 同时把颜色也带出来（取这个分类现有模板用的颜色），不用每次手动调色
+function fillPrefixFromSelectedCategory() {
+  const usingNewCat = newCatBox.style.display === 'block';
+  if (usingNewCat) return;
+  const cat = categoriesData.find(c => c.key === catSelect.value);
+  const firstItem = cat?.items?.[0];
+  const m = firstItem?.code && String(firstItem.code).match(/^(.*)-\d+$/);
+  document.getElementById('prefixInput').value = m ? m[1] : '';
+  if (firstItem?.color) {
+    const { hex6, alphaPercent } = splitColorHex(firstItem.color);
+    document.getElementById('colorInput').value = hex6;
+    document.getElementById('colorAlphaInput').value = alphaPercent;
+    document.getElementById('colorAlphaLabel').textContent = alphaPercent + '%';
+  }
+}
+catSelect.addEventListener('change', fillPrefixFromSelectedCategory);
+
+// ---- 删除模板 ----
+const deleteCatSelect = document.getElementById('deleteCatSelect');
+const deleteList = document.getElementById('deleteList');
+
+function fillDeleteCatSelect() {
+  const keepSelection = deleteCatSelect.value;
+  deleteCatSelect.innerHTML = categoriesData.map(c => `<option value="${c.key}">${c.name}</option>`).join('');
+  if (keepSelection && categoriesData.some(c => c.key === keepSelection)) {
+    deleteCatSelect.value = keepSelection;
+  }
+  renderDeleteList();
+}
+deleteCatSelect.addEventListener('change', renderDeleteList);
+const deleteSearchInput = document.getElementById('deleteSearchInput');
+deleteSearchInput.addEventListener('input', renderDeleteList);
+
+function renderDeleteList() {
+  const cat = categoriesData.find((c) => c.key === deleteCatSelect.value);
+  deleteList.innerHTML = '';
+  if (!cat || cat.items.length === 0) {
+    deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">这个分类下还没有模板</div>';
+    return;
+  }
+  const query = deleteSearchInput.value.trim().toLowerCase();
+  const filtered = query ? cat.items.filter((it) => it.code.toLowerCase().includes(query)) : cat.items;
+  if (filtered.length === 0) {
+    deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">没有匹配的编号</div>';
+    return;
+  }
+  filtered.forEach((item) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:6px; padding:8px 10px;';
+    const firstImg = Array.isArray(item.image) ? item.image[0] : item.image;
+    const thumbHtml = firstImg
+      ? `<img src="${firstImg}" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
+      : `<div style="width:44px;height:44px;border-radius:4px;background:${item.color || '#ccc'};flex-shrink:0;"></div>`;
+    row.innerHTML = `${thumbHtml}<div style="flex:1;font-family:'Space Mono',monospace;font-size:13px;">${item.code}</div><button class="link editBtn" style="color:var(--ink);">编辑</button><button class="link delBtn" style="color:var(--accent);">删除</button>`;
+    row.querySelector('.delBtn').addEventListener('click', () => handleDeleteItem(cat.key, item, row));
+    row.querySelector('.editBtn').addEventListener('click', () => toggleEditForm(cat.key, item, row));
+    deleteList.appendChild(row);
+  });
+}
+
+// 展开/收起某一行的内联编辑表单
+function toggleEditForm(categoryKey, item, rowEl) {
+  const existing = rowEl.nextElementSibling;
+  if (existing && existing.classList.contains('editForm')) {
+    existing.remove();
+    return;
+  }
+  // 一次只展开一个编辑表单，避免页面上同时出现多个搞混
+  deleteList.querySelectorAll('.editForm').forEach((el) => el.remove());
+
+  const { hex6: editHex6, alphaPercent: editAlphaPercent } = splitColorHex(item.color);
+
+  const form = document.createElement('div');
+  form.className = 'editForm';
+  form.style.cssText = 'border:1px dashed var(--line); border-radius:6px; padding:12px; margin-top:-4px; margin-bottom:4px; display:flex; flex-direction:column; gap:8px;';
+  form.innerHTML = `
+    <label style="margin:0;">编号</label>
+    <input type="text" class="editCode" value="${item.code}">
+    <div class="row">
+      <div>
+        <label style="margin:0;">比例</label>
+        <select class="editRatio">
+          <option value="3/4" ${item.ratio === '3/4' || !item.ratio ? 'selected' : ''}>3 : 4</option>
+          <option value="1/1" ${item.ratio === '1/1' ? 'selected' : ''}>1 : 1</option>
+          <option value="9/16" ${item.ratio === '9/16' ? 'selected' : ''}>9 : 16</option>
+          <option value="16/9" ${item.ratio === '16/9' ? 'selected' : ''}>16 : 9</option>
+        </select>
+      </div>
+      <div>
+        <label style="margin:0;">颜色</label>
+        <input type="color" class="editColor" value="${editHex6}">
+        <div style="display:flex; align-items:center; gap:8px; margin-top:6px;">
+          <input type="range" class="editColorAlpha" min="0" max="100" value="${editAlphaPercent}" style="flex:1;">
+          <span class="editColorAlphaLabel" style="font-size:12px; color:var(--ink-soft); width:36px;">${editAlphaPercent}%</span>
+        </div>
+      </div>
+    </div>
+    <label style="margin:0;">替换图片（只能选一张，不选就保持原图不变）</label>
+    <input type="file" class="editFiles" accept="image/*">
+    <div style="display:flex; gap:10px; margin-top:4px;">
+      <button class="primary editSaveBtn" style="margin:0;">保存</button>
+      <button class="link editCancelBtn">取消</button>
+    </div>
+    <div class="editStatus" style="font-family:'Space Mono',monospace; font-size:12px;"></div>
+  `;
+  rowEl.after(form);
+
+  form.querySelector('.editColorAlpha').addEventListener('input', (e) => {
+    form.querySelector('.editColorAlphaLabel').textContent = e.target.value + '%';
+  });
+  form.querySelector('.editCancelBtn').addEventListener('click', () => form.remove());
+  form.querySelector('.editSaveBtn').addEventListener('click', () => saveEditForm(categoryKey, item, form, rowEl));
+}
+
+async function saveEditForm(categoryKey, item, form, rowEl) {
+  const saveBtn = form.querySelector('.editSaveBtn');
+  const statusEl = form.querySelector('.editStatus');
+  const newCode = form.querySelector('.editCode').value.trim();
+  const newRatio = form.querySelector('.editRatio').value;
+  const newColor = combineColorHex(form.querySelector('.editColor').value, form.querySelector('.editColorAlpha').value);
+  const newFiles = form.querySelector('.editFiles').files;
+
+  saveBtn.disabled = true;
+  statusEl.textContent = '';
+  try {
+    let newImages = [];
+    if (newFiles.length > 0) {
+      statusEl.textContent = '正在上传新图片…';
+      for (let i = 0; i < newFiles.length; i++) {
+        const file = newFiles[i];
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+        const key = `Templates/${categoryKey}/${newCode || item.code}-edit-${Date.now()}-${i + 1}.${ext}`;
+        const toUpload = await compressImage(file, 2000, 0.85);
+        newImages.push(await uploadToWorker(key, toUpload));
+      }
+    }
+
+    statusEl.textContent = '正在保存修改…';
+    const res = await fetch(API_BASE + '/edititem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({
+        categoryKey,
+        originalImages: item.image,
+        code: newCode,
+        color: newColor,
+        ratio: newRatio,
+        newImages: newImages.length > 0 ? newImages : undefined,
+      }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '保存失败');
+    form.remove();
+    await loadCategories();
+  } catch (err) {
+    statusEl.textContent = '❌ ' + err.message;
+  } finally {
+    saveBtn.disabled = false;
+  }
+}
+
+async function handleDeleteItem(categoryKey, item, rowEl) {
+  const sure = confirm(`确定要删除「${item.code}」这一条吗？图片也会从R2一起删掉，不可恢复。`);
+  if (!sure) return;
+  rowEl.style.opacity = '0.5';
+  try {
+    const res = await fetch(API_BASE + '/deleteitem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, images: item.image }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '删除失败');
+    await loadCategories();
+  } catch (err) {
+    alert('删除失败：' + err.message);
+    rowEl.style.opacity = '1';
+  }
+}
+
+// ---- 分类管理：调整顺序 / 改名 ----
+function renderCatManageList() {
+  const container = document.getElementById('catManageList');
+  container.innerHTML = '';
+  categoriesData.forEach((c, idx) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex; align-items:center; gap:8px; border:1px solid var(--line); border-radius:6px; padding:8px 10px;';
+    row.innerHTML = `
+      <button class="link catUpBtn" ${idx === 0 ? 'disabled style="opacity:.3;"' : ''}>↑</button>
+      <button class="link catDownBtn" ${idx === categoriesData.length - 1 ? 'disabled style="opacity:.3;"' : ''}>↓</button>
+      <input type="text" class="catNameInput" value="${c.name}" style="flex:1;">
+      <button class="link catSaveNameBtn">保存名称</button>
+      <button class="link catCoverBtn">更换封面</button>
+      <input type="file" class="catCoverInput" accept="image/*" style="display:none;">
+    `;
+    row.querySelector('.catUpBtn').addEventListener('click', () => moveCategory(idx, -1));
+    row.querySelector('.catDownBtn').addEventListener('click', () => moveCategory(idx, 1));
+    row.querySelector('.catSaveNameBtn').addEventListener('click', () =>
+      saveCatName(c.key, row.querySelector('.catNameInput').value.trim())
+    );
+    row.querySelector('.catCoverBtn').addEventListener('click', () => row.querySelector('.catCoverInput').click());
+    row.querySelector('.catCoverInput').addEventListener('change', (e) => handleCoverChange(c.key, e.target.files[0], row));
+    container.appendChild(row);
+  });
+}
+
+async function moveCategory(idx, delta) {
+  const newIdx = idx + delta;
+  if (newIdx < 0 || newIdx >= categoriesData.length) return;
+  const order = categoriesData.map((c) => c.key);
+  [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+  try {
+    const res = await fetch(API_BASE + '/reordercats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ order }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '排序失败');
+    await loadCategories();
+    renderCatManageList();
+  } catch (err) {
+    alert('排序失败：' + err.message);
+  }
+}
+
+async function saveCatName(categoryKey, newName) {
+  if (!newName) {
+    alert('名称不能为空');
+    return;
+  }
+  try {
+    const res = await fetch(API_BASE + '/renamecat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, newName }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '改名失败');
+    await loadCategories();
+    renderCatManageList();
+  } catch (err) {
+    alert('改名失败：' + err.message);
+  }
+}
+
+async function handleCoverChange(categoryKey, file, rowEl) {
+  if (!file) return;
+  const btn = rowEl.querySelector('.catCoverBtn');
+  const originalText = btn.textContent;
+  btn.textContent = '上传中…';
+  btn.disabled = true;
+  try {
+    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+    const key = `Templates/${categoryKey}/_cover-${Date.now()}.${ext}`; // 每次换封面都用新文件名，避免CDN缓存旧图
+    const toUpload = await compressImage(file, 1200, 0.85); // 封面图不用太大，1200px内足够
+    const url = await uploadToWorker(key, toUpload);
+    const res = await fetch(API_BASE + '/setcatimage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, image: url }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '更换封面失败');
+    await loadCategories();
+    renderCatManageList();
+  } catch (err) {
+    alert('更换封面失败：' + err.message);
+  } finally {
+    btn.textContent = originalText;
+    btn.disabled = false;
+  }
+}
+
+// 选好文件后，先在页面上预览一遍，确认没选错再上传
+document.getElementById('fileInput').addEventListener('change', (e) => {
+  const preview = document.getElementById('filePreview');
+  preview.innerHTML = '';
+  Array.from(e.target.files).forEach((file) => {
+    const url = URL.createObjectURL(file);
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'text-align:center;';
+    wrap.innerHTML = `
+      <img src="${url}" style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block;">
+      <div style="font-size:10px;color:var(--ink-soft);max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">${file.name}</div>
+    `;
+    preview.appendChild(wrap);
+  });
+});
+
+const newCatToggle = document.getElementById('newCatToggle');
+const newCatBox = document.getElementById('newCatBox');
+newCatToggle.addEventListener('click', () => {
+  const showing = newCatBox.style.display === 'block';
+  newCatBox.style.display = showing ? 'none' : 'block';
+  catSelect.disabled = !showing;
+  fillPrefixFromSelectedCategory();
+});
+
+function setStatus(text, kind) {
+  const el = document.getElementById('status');
+  el.textContent = text;
+  el.className = kind || '';
+}
+
+document.getElementById('submitBtn').addEventListener('click', async () => {
+  const usingNewCat = newCatBox.style.display === 'block';
+  const categoryName = usingNewCat ? document.getElementById('newCatName').value.trim() : catSelect.selectedOptions[0]?.dataset.name;
+  const categoryKey = usingNewCat ? categoryName : catSelect.value;
+  const ratio = document.getElementById('ratioSelect').value;
+  const color = combineColorHex(document.getElementById('colorInput').value, document.getElementById('colorAlphaInput').value);
+  const files = document.getElementById('fileInput').files;
+
+  if (!categoryKey || files.length === 0) {
+    setStatus('分类、图片都是必填的', 'err');
+    return;
+  }
+  if (usingNewCat) {
+    const similar = categoriesData.find((c) => c.name !== categoryName && levenshtein(c.name, categoryName) <= 1);
+    if (similar) {
+      const proceed = confirm(`已有一个很像的分类叫「${similar.name}」，你填的是「${categoryName}」，确定不是打错字、真的要新建一个不一样的分类吗？`);
+      if (!proceed) {
+        setStatus('已取消，请检查分类名称是不是打错字了', 'err');
+        return;
+      }
+    }
+  }
+
+  const submitBtn = document.getElementById('submitBtn');
+  submitBtn.disabled = true;
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+  progressBar.style.display = 'block';
+
+  const uploadedKeysThisAttempt = []; // 记录这次已经传成功的文件，万一中途失败要拿去清理
+  let addBatchSucceeded = false;
+
+  try {
+    // 编号从文件名解析（去掉扩展名后取小数点前的整数部分），每张图各自是独立模板，允许多张图共用同一编号
+    const CODE_WIDTH = 3; // 编号补零位数，如果你的编号习惯不是3位数（比如4位），改这个数字
+    const manualPrefix = document.getElementById('prefixInput').value.trim();
+    if (!manualPrefix) throw new Error('需要填"编号前缀"');
+
+    // 先校验所有文件名，任何一个不合规就整批不上传
+    const invalidNames = [];
+    const parsedFiles = [];
+    for (const file of files) {
+      const baseName = file.name.replace(/\.[^.]+$/, ''); // 去掉最后的扩展名
+      if (!/^\d+(\.\d+)?$/.test(baseName)) {
+        invalidNames.push(file.name);
+      } else {
+        parsedFiles.push({ file, intPart: baseName.split('.')[0] });
+      }
+    }
+    if (invalidNames.length > 0) {
+      throw new Error(
+        '以下文件名不符合规则（必须是纯数字，最多一个小数点，比如 1.jpg 或 2.1.jpg，不能有汉字/字母）：' +
+          invalidNames.join('、')
+      );
+    }
+
+    const items = [];
+    setStatus('正在上传图片 0/' + parsedFiles.length);
+    for (let i = 0; i < parsedFiles.length; i++) {
+      const { file, intPart } = parsedFiles[i];
+      const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
+      // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
+      const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
+      const toUpload = await compressImage(file, 2000, 0.85);
+      const imageUrl = await uploadToWorker(key, toUpload);
+      uploadedKeysThisAttempt.push(key);
+      progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
+      items.push({ code, images: [imageUrl], color, ratio });
+      setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
+    }
+    setStatus('图片传完了，正在批量更新模板列表…');
+    const addRes = await fetch(API_BASE + '/addbatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, categoryName, items }),
+    });
+    const addData = await addRes.json();
+    if (!addData.ok) throw new Error(addData.message || '批量更新失败');
+    addBatchSucceeded = true;
+    setStatus(`✅ 上传成功！新增了 ${addData.added} 款，「${categoryName || categoryKey}」分类现在有 ${addData.total} 款模板了`, 'ok');
+
+    document.getElementById('fileInput').value = '';
+    progressFill.style.width = '0%';
+    loadCategories();
+  } catch (err) {
+    if (!addBatchSucceeded && uploadedKeysThisAttempt.length > 0) {
+      // data.json还没更新就失败了，说明这一批已经传上去的图都成了孤儿文件，逐个清理掉
+      setStatus('出错了，正在清理已经传上去的文件…');
+      for (const key of uploadedKeysThisAttempt) {
+        try {
+          await fetch(API_BASE + '/deletefile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+            body: JSON.stringify({ key }),
+          });
+        } catch (cleanupErr) {
+          console.error('清理孤儿文件失败：', key, cleanupErr);
+        }
+      }
+    }
+    setStatus('❌ 出错了：' + err.message, 'err');
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
+</script>
+</body>
+</html>
