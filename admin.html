@@ -96,19 +96,8 @@
 
       <fieldset>
         <legend>模板信息</legend>
-        <label style="display:flex; align-items:center; gap:8px;">
-          <input type="checkbox" id="batchModeCheck" style="width:auto;">
-          批量模式：选中的每张图片各自变成一个新模板，编号自动依次生成
-        </label>
-
-        <div id="singleCodeBox">
-          <label>编号</label>
-          <input type="text" id="codeInput" placeholder="例如 015">
-        </div>
-        <div id="batchPrefixBox" style="display:none;">
-          <label>编号前缀（比如"冠名卡"，图片文件名必须是纯数字，如 1.jpg 或 2.1.jpg）</label>
-          <input type="text" id="prefixInput" placeholder="例如 冠名卡">
-        </div>
+        <label>编号前缀（比如"冠名卡"，图片文件名必须是纯数字，如 1.jpg 或 2.1.jpg）</label>
+        <input type="text" id="prefixInput" placeholder="例如 冠名卡">
 
         <div class="row">
           <div>
@@ -132,7 +121,7 @@
       </fieldset>
 
       <fieldset>
-        <legend id="fileFieldsetLegend">图片（可多选，长图/多图模板可以一次选多张）</legend>
+        <legend>图片（可多选，每张图各自变成一个新模板，编号从文件名里的数字自动提取）</legend>
         <input type="file" id="fileInput" accept="image/*" multiple>
         <div id="filePreview" style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;"></div>
       </fieldset>
@@ -422,8 +411,8 @@ function toggleEditForm(categoryKey, item, rowEl) {
         </div>
       </div>
     </div>
-    <label style="margin:0;">替换图片（不选就保持原图不变）</label>
-    <input type="file" class="editFiles" accept="image/*" multiple>
+    <label style="margin:0;">替换图片（只能选一张，不选就保持原图不变）</label>
+    <input type="file" class="editFiles" accept="image/*">
     <div style="display:flex; gap:10px; margin-top:4px;">
       <button class="primary editSaveBtn" style="margin:0;">保存</button>
       <button class="link editCancelBtn">取消</button>
@@ -599,8 +588,6 @@ async function handleCoverChange(categoryKey, file, rowEl) {
   }
 }
 
-const batchModeCheck = document.getElementById('batchModeCheck');
-
 // 选好文件后，先在页面上预览一遍，确认没选错再上传
 document.getElementById('fileInput').addEventListener('change', (e) => {
   const preview = document.getElementById('filePreview');
@@ -615,17 +602,6 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
     `;
     preview.appendChild(wrap);
   });
-});
-const singleCodeBox = document.getElementById('singleCodeBox');
-const batchPrefixBox = document.getElementById('batchPrefixBox');
-const fileFieldsetLegend = document.getElementById('fileFieldsetLegend');
-batchModeCheck.addEventListener('change', () => {
-  const isBatch = batchModeCheck.checked;
-  singleCodeBox.style.display = isBatch ? 'none' : 'block';
-  batchPrefixBox.style.display = isBatch ? 'block' : 'none';
-  fileFieldsetLegend.textContent = isBatch
-    ? '图片（可多选，每张图各自成为一个新模板）'
-    : '图片（可多选，长图/多图模板可以一次选多张）';
 });
 
 const newCatToggle = document.getElementById('newCatToggle');
@@ -650,7 +626,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   const ratio = document.getElementById('ratioSelect').value;
   const color = combineColorHex(document.getElementById('colorInput').value, document.getElementById('colorAlphaInput').value);
   const files = document.getElementById('fileInput').files;
-  const isBatch = batchModeCheck.checked;
 
   if (!categoryKey || files.length === 0) {
     setStatus('分类、图片都是必填的', 'err');
@@ -666,10 +641,6 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       }
     }
   }
-  if (!isBatch && !document.getElementById('codeInput').value.trim()) {
-    setStatus('编号是必填的', 'err');
-    return;
-  }
 
   const submitBtn = document.getElementById('submitBtn');
   submitBtn.disabled = true;
@@ -678,78 +649,51 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   progressBar.style.display = 'block';
 
   try {
-    if (!isBatch) {
-      // ---- 单个模板：多张图归到同一个编号下 ----
-      const code = document.getElementById('codeInput').value.trim();
-      setStatus('正在上传图片 0/' + files.length);
-      const uploadedKeys = [];
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        const key = `Templates/${categoryKey}/${code}-${i + 1}.${ext}`;
-        const toUpload = await compressImage(file, 2000, 0.85);
-        uploadedKeys.push(await uploadToWorker(key, toUpload));
-        progressFill.style.width = (((i + 1) / files.length) * 100) + '%';
-        setStatus(`正在上传图片 ${i + 1}/${files.length}`);
-      }
-      setStatus('图片传完了，正在更新模板列表…');
-      const addRes = await fetch(API_BASE + '/additem', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ categoryKey, categoryName, code, images: uploadedKeys, color, ratio }),
-      });
-      const addData = await addRes.json();
-      if (!addData.ok) throw new Error(addData.message || '更新列表失败');
-      setStatus(`✅ 上传成功！「${categoryName || categoryKey}」分类现在有 ${addData.itemCount} 款模板了`, 'ok');
-      document.getElementById('codeInput').value = '';
-    } else {
-      // ---- 批量模式：编号从文件名解析（去掉扩展名后取小数点前的整数部分），允许多张图共用同一编号 ----
-      const CODE_WIDTH = 3; // 编号补零位数，如果你的编号习惯不是3位数（比如4位），改这个数字
-      const manualPrefix = document.getElementById('prefixInput').value.trim();
-      if (!manualPrefix) throw new Error('批量模式需要填"编号前缀"');
+    // 编号从文件名解析（去掉扩展名后取小数点前的整数部分），每张图各自是独立模板，允许多张图共用同一编号
+    const CODE_WIDTH = 3; // 编号补零位数，如果你的编号习惯不是3位数（比如4位），改这个数字
+    const manualPrefix = document.getElementById('prefixInput').value.trim();
+    if (!manualPrefix) throw new Error('需要填"编号前缀"');
 
-      // 先校验所有文件名，任何一个不合规就整批不上传
-      const invalidNames = [];
-      const parsedFiles = [];
-      for (const file of files) {
-        const baseName = file.name.replace(/\.[^.]+$/, ''); // 去掉最后的扩展名
-        if (!/^\d+(\.\d+)?$/.test(baseName)) {
-          invalidNames.push(file.name);
-        } else {
-          parsedFiles.push({ file, intPart: baseName.split('.')[0] });
-        }
+    // 先校验所有文件名，任何一个不合规就整批不上传
+    const invalidNames = [];
+    const parsedFiles = [];
+    for (const file of files) {
+      const baseName = file.name.replace(/\.[^.]+$/, ''); // 去掉最后的扩展名
+      if (!/^\d+(\.\d+)?$/.test(baseName)) {
+        invalidNames.push(file.name);
+      } else {
+        parsedFiles.push({ file, intPart: baseName.split('.')[0] });
       }
-      if (invalidNames.length > 0) {
-        throw new Error(
-          '以下文件名不符合规则（必须是纯数字，最多一个小数点，比如 1.jpg 或 2.1.jpg，不能有汉字/字母）：' +
-            invalidNames.join('、')
-        );
-      }
-
-      const items = [];
-      setStatus('正在上传图片 0/' + parsedFiles.length);
-      for (let i = 0; i < parsedFiles.length; i++) {
-        const { file, intPart } = parsedFiles[i];
-        const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
-        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
-        const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
-        const toUpload = await compressImage(file, 2000, 0.85);
-        const imageUrl = await uploadToWorker(key, toUpload);
-        progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
-        items.push({ code, images: [imageUrl], color, ratio });
-        setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
-      }
-      setStatus('图片传完了，正在批量更新模板列表…');
-      const addRes = await fetch(API_BASE + '/addbatch', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
-        body: JSON.stringify({ categoryKey, categoryName, items }),
-      });
-      const addData = await addRes.json();
-      if (!addData.ok) throw new Error(addData.message || '批量更新失败');
-      setStatus(`✅ 批量上传成功！新增了 ${addData.added} 款，「${categoryName || categoryKey}」分类现在有 ${addData.total} 款模板了`, 'ok');
     }
+    if (invalidNames.length > 0) {
+      throw new Error(
+        '以下文件名不符合规则（必须是纯数字，最多一个小数点，比如 1.jpg 或 2.1.jpg，不能有汉字/字母）：' +
+          invalidNames.join('、')
+      );
+    }
+
+    const items = [];
+    setStatus('正在上传图片 0/' + parsedFiles.length);
+    for (let i = 0; i < parsedFiles.length; i++) {
+      const { file, intPart } = parsedFiles[i];
+      const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
+      // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
+      const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
+      const toUpload = await compressImage(file, 2000, 0.85);
+      const imageUrl = await uploadToWorker(key, toUpload);
+      progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
+      items.push({ code, images: [imageUrl], color, ratio });
+      setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
+    }
+    setStatus('图片传完了，正在批量更新模板列表…');
+    const addRes = await fetch(API_BASE + '/addbatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+      body: JSON.stringify({ categoryKey, categoryName, items }),
+    });
+    const addData = await addRes.json();
+    if (!addData.ok) throw new Error(addData.message || '批量更新失败');
+    setStatus(`✅ 上传成功！新增了 ${addData.added} 款，「${categoryName || categoryKey}」分类现在有 ${addData.total} 款模板了`, 'ok');
 
     document.getElementById('fileInput').value = '';
     progressFill.style.width = '0%';
