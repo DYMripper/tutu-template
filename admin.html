@@ -648,6 +648,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   const progressFill = document.getElementById('progressFill');
   progressBar.style.display = 'block';
 
+  const uploadedKeysThisAttempt = []; // 记录这次已经传成功的文件，万一中途失败要拿去清理
+  let addBatchSucceeded = false;
+
   try {
     // 编号从文件名解析（去掉扩展名后取小数点前的整数部分），每张图各自是独立模板，允许多张图共用同一编号
     const CODE_WIDTH = 3; // 编号补零位数，如果你的编号习惯不是3位数（比如4位），改这个数字
@@ -681,6 +684,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
       const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
       const toUpload = await compressImage(file, 2000, 0.85);
       const imageUrl = await uploadToWorker(key, toUpload);
+      uploadedKeysThisAttempt.push(key);
       progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
       items.push({ code, images: [imageUrl], color, ratio });
       setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
@@ -693,12 +697,28 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     });
     const addData = await addRes.json();
     if (!addData.ok) throw new Error(addData.message || '批量更新失败');
+    addBatchSucceeded = true;
     setStatus(`✅ 上传成功！新增了 ${addData.added} 款，「${categoryName || categoryKey}」分类现在有 ${addData.total} 款模板了`, 'ok');
 
     document.getElementById('fileInput').value = '';
     progressFill.style.width = '0%';
     loadCategories();
   } catch (err) {
+    if (!addBatchSucceeded && uploadedKeysThisAttempt.length > 0) {
+      // data.json还没更新就失败了，说明这一批已经传上去的图都成了孤儿文件，逐个清理掉
+      setStatus('出错了，正在清理已经传上去的文件…');
+      for (const key of uploadedKeysThisAttempt) {
+        try {
+          await fetch(API_BASE + '/deletefile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken },
+            body: JSON.stringify({ key }),
+          });
+        } catch (cleanupErr) {
+          console.error('清理孤儿文件失败：', key, cleanupErr);
+        }
+      }
+    }
     setStatus('❌ 出错了：' + err.message, 'err');
   } finally {
     submitBtn.disabled = false;
