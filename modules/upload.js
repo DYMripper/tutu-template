@@ -1,5 +1,5 @@
 // ------- "新增模板"面板 -------
-import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, combineColorHex, splitColorHex, levenshtein } from '../core.js';
+import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, levenshtein } from '../core.js';
 
 const catSelect = document.getElementById('catSelect');
 const newCatToggle = document.getElementById('newCatToggle');
@@ -8,7 +8,11 @@ const newCatBox = document.getElementById('newCatBox');
 // 根据当前选中的分类，从已有编号里猜出编号前缀，自动填进"编号前缀"框（仍可手动改）
 // 同时把颜色也带出来（取这个分类现有模板用的颜色），不用每次手动调色
 export function refreshUploadPanel() {
+  const keepSelection = catSelect.value;
   catSelect.innerHTML = state.categories.map((c) => `<option value="${c.key}" data-name="${c.name}">${c.name}</option>`).join('');
+  if (keepSelection && state.categories.some((c) => c.key === keepSelection)) {
+    catSelect.value = keepSelection;
+  }
   document.getElementById('existingCatNames').textContent = state.categories.map((c) => c.name).join('、');
   fillPrefixFromSelectedCategory();
 }
@@ -122,9 +126,11 @@ async function handleSubmit() {
     for (let i = 0; i < parsedFiles.length; i++) {
       const { file, intPart } = parsedFiles[i];
       const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
-      // 用原始文件名(含小数点部分)拼进key，避免"2.1.jpg"和"2.2.jpg"存到同一个路径互相覆盖
-      const key = `Templates/${categoryKey}/${manualPrefix}-${file.name}`;
       const toUpload = await compressImage(file, 2000, 0.85);
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+      const hash = await hashBlob(toUpload);
+      // key里带内容指纹：图片内容不变哈希就不变，内容一变哈希跟着变，URL自动换新，浏览器/CDN缓存不用手动清
+      const key = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${hash}.${ext}`;
       const imageUrl = await uploadToWorker(key, toUpload);
       uploadedKeysThisAttempt.push(key);
       progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';

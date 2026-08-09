@@ -9,6 +9,14 @@ export const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
 export const session = { token: null }; // 登录成功后Worker发的通行证，只存在内存里，刷新页面就要重新登录
 export const state = { categories: [] }; // 从data.json拉下来的全部分类数据，各面板共用同一份
 
+// 算文件内容的哈希值（取SHA-256前8位），拼进文件名里当"内容指纹"——
+// 图片内容不变，哈希就不变，内容一变哈希跟着变，URL自然跟着变，浏览器/CDN缓存自动失效，不用手动清缓存
+export async function hashBlob(blob) {
+  const buffer = await blob.arrayBuffer();
+  const digest = await crypto.subtle.digest('SHA-256', buffer);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('').slice(0, 8);
+}
+
 export function setStatus(text, kind) {
   const el = document.getElementById('status');
   el.textContent = text;

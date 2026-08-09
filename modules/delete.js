@@ -1,5 +1,5 @@
 // ------- "删除模板"面板（含内联编辑） -------
-import { API_BASE, session, state, compressImage, uploadToWorker, combineColorHex, splitColorHex } from '../core.js';
+import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex } from '../core.js';
 
 const deleteCatSelect = document.getElementById('deleteCatSelect');
 const deleteList = document.getElementById('deleteList');
@@ -17,33 +17,64 @@ export function refreshDeletePanel() {
 export function initDelete() {
   deleteCatSelect.addEventListener('change', renderDeleteList);
   deleteSearchInput.addEventListener('input', renderDeleteList);
+
+  // 动态插入"全选 + 批量删除"控制条，放在搜索框和列表之间
+  const bulkBar = document.createElement('div');
+  bulkBar.style.cssText = 'display:flex; align-items:center; gap:14px; margin-top:10px; font-size:13px;';
+  bulkBar.innerHTML = `
+    <label style="display:flex; align-items:center; gap:6px; margin:0; color:var(--ink);">
+      <input type="checkbox" id="selectAllCheck" style="width:auto;">
+      全选当前列表
+    </label>
+    <button class="link" id="bulkDeleteBtn" style="color:var(--accent);">批量删除选中项（<span id="selectedCount">0</span>）</button>
+  `;
+  deleteSearchInput.after(bulkBar);
+
+  document.getElementById('selectAllCheck').addEventListener('change', (e) => {
+    deleteList.querySelectorAll('.itemCheck').forEach((cb) => (cb.checked = e.target.checked));
+    updateSelectedCount();
+  });
+  document.getElementById('bulkDeleteBtn').addEventListener('click', handleBulkDelete);
+}
+
+function updateSelectedCount() {
+  const countEl = document.getElementById('selectedCount');
+  if (countEl) countEl.textContent = deleteList.querySelectorAll('.itemCheck:checked').length;
 }
 
 function renderDeleteList() {
+  const selectAllCheck = document.getElementById('selectAllCheck');
+  if (selectAllCheck) selectAllCheck.checked = false;
   const cat = state.categories.find((c) => c.key === deleteCatSelect.value);
   deleteList.innerHTML = '';
   if (!cat || cat.items.length === 0) {
     deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">这个分类下还没有模板</div>';
+    updateSelectedCount();
     return;
   }
   const query = deleteSearchInput.value.trim().toLowerCase();
   const filtered = query ? cat.items.filter((it) => it.code.toLowerCase().includes(query)) : cat.items;
   if (filtered.length === 0) {
     deleteList.innerHTML = '<div style="font-size:13px;color:var(--ink-soft);">没有匹配的编号</div>';
+    updateSelectedCount();
     return;
   }
   filtered.forEach((item) => {
     const row = document.createElement('div');
+    row.className = 'deleteRow';
     row.style.cssText = 'display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:6px; padding:8px 10px;';
     const firstImg = Array.isArray(item.image) ? item.image[0] : item.image;
     const thumbHtml = firstImg
       ? `<img src="${firstImg}" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
       : `<div style="width:44px;height:44px;border-radius:4px;background:${item.color || '#ccc'};flex-shrink:0;"></div>`;
-    row.innerHTML = `${thumbHtml}<div style="flex:1;font-family:'Space Mono',monospace;font-size:13px;">${item.code}</div><button class="link editBtn" style="color:var(--ink);">编辑</button><button class="link delBtn" style="color:var(--accent);">删除</button>`;
+    row.innerHTML = `<input type="checkbox" class="itemCheck" style="width:auto;">${thumbHtml}<div style="flex:1;font-family:'Space Mono',monospace;font-size:13px;">${item.code}</div><button class="link editBtn" style="color:var(--ink);">编辑</button><button class="link delBtn" style="color:var(--accent);">删除</button>`;
+    row._itemData = { categoryKey: cat.key, item };
+    row.querySelector('.itemCheck').addEventListener('change', updateSelectedCount);
     row.querySelector('.delBtn').addEventListener('click', () => handleDeleteItem(cat.key, item, row));
     row.querySelector('.editBtn').addEventListener('click', () => toggleEditForm(cat.key, item, row));
     deleteList.appendChild(row);
   });
+  updateSelectedCount();
 }
 
 // 展开/收起某一行的内联编辑表单
@@ -117,8 +148,9 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
       for (let i = 0; i < newFiles.length; i++) {
         const file = newFiles[i];
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        const key = `Templates/${categoryKey}/${newCode || item.code}-edit-${Date.now()}-${i + 1}.${ext}`;
         const toUpload = await compressImage(file, 2000, 0.85);
+        const hash = await hashBlob(toUpload);
+        const key = `Templates/${categoryKey}/${newCode || item.code}-${hash}.${ext}`;
         newImages.push(await uploadToWorker(key, toUpload));
       }
     }
@@ -163,5 +195,35 @@ async function handleDeleteItem(categoryKey, item, rowEl) {
   } catch (err) {
     alert('删除失败：' + err.message);
     rowEl.style.opacity = '1';
+  }
+}
+
+async function handleBulkDelete() {
+  const rows = Array.from(deleteList.querySelectorAll('.deleteRow')).filter((row) => row.querySelector('.itemCheck').checked);
+  if (rows.length === 0) {
+    alert('还没选中任何要删除的模板');
+    return;
+  }
+  const sure = confirm(`确定要删除选中的 ${rows.length} 款模板吗？图片也会一起从R2删掉，不可恢复。`);
+  if (!sure) return;
+
+  const bulkBtn = document.getElementById('bulkDeleteBtn');
+  bulkBtn.disabled = true;
+  rows.forEach((row) => (row.style.opacity = '0.5'));
+  try {
+    const deletions = rows.map((row) => ({ categoryKey: row._itemData.categoryKey, images: row._itemData.item.image }));
+    const res = await fetch(API_BASE + '/deletebatch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': session.token },
+      body: JSON.stringify({ deletions }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '批量删除失败');
+    document.dispatchEvent(new CustomEvent('tutu:refresh'));
+  } catch (err) {
+    alert('批量删除失败：' + err.message);
+    rows.forEach((row) => (row.style.opacity = '1'));
+  } finally {
+    bulkBtn.disabled = false;
   }
 }

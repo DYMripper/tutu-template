@@ -1,5 +1,5 @@
 // ------- "分类管理"面板 -------
-import { API_BASE, session, state, compressImage, uploadToWorker } from '../core.js';
+import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob } from '../core.js';
 
 export function initCategoryManage() {
   // 目前不需要额外的一次性事件绑定，交互都是渲染列表时逐行绑定的
@@ -76,8 +76,9 @@ async function handleCoverChange(categoryKey, file, rowEl) {
   btn.disabled = true;
   try {
     const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-    const key = `Templates/${categoryKey}/_cover-${Date.now()}.${ext}`; // 每次换封面都用新文件名，避免CDN缓存旧图
     const toUpload = await compressImage(file, 1200, 0.85); // 封面图不用太大，1200px内足够
+    const hash = await hashBlob(toUpload);
+    const key = `Templates/${categoryKey}/_cover-${hash}.${ext}`; // 内容指纹当文件名，内容没变就还是这个URL，变了URL自动换新
     const url = await uploadToWorker(key, toUpload);
     const res = await fetch(API_BASE + '/setcatimage', {
       method: 'POST',
