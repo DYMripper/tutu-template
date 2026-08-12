@@ -31,26 +31,34 @@ const WATERMARK_TEXT = 'TUTU STUDIO   荼荼工作室   防盗预览';
 
 // 采样canvas上已经画好的图片像素，算个大概的整体亮度（0全黑～255全白）
 // 每隔一定间隔取一个点，不用扫全部像素，避免大图片卡顿
-function getAverageBrightness(ctx, width, height) {
+function analyzeImageTone(ctx, width, height) {
   const data = ctx.getImageData(0, 0, width, height).data;
   const sampleStride = 4 * 20; // 每隔20个像素采样一次
   let total = 0;
+  let totalSquared = 0;
   let count = 0;
   for (let i = 0; i < data.length; i += sampleStride) {
-    total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    const luminance = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    total += luminance;
+    totalSquared += luminance * luminance;
     count++;
   }
-  return count > 0 ? total / count : 128;
+  const brightness = count > 0 ? total / count : 128;
+  const variance = count > 0 ? totalSquared / count - brightness * brightness : 0;
+  const stdDev = Math.sqrt(Math.max(0, variance)); // 图片内容越花哨/越杂乱，这个数值越大
+  return { brightness, stdDev };
 }
 
 function drawWatermark(ctx, width, height) {
-  const brightness = getAverageBrightness(ctx, width, height);
+  const { brightness, stdDev } = analyzeImageTone(ctx, width, height);
   const isLightImage = brightness > 140; // 阈值，图偏亮就用深色水印，图偏暗就用浅色水印
   const watermarkColor = isLightImage ? '#000000' : '#ffffff';
   const shadowColor = isLightImage ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+  // 背景越单一干净（stdDev小），透明度低一点就够看清；背景越花哨杂乱（stdDev大），适当调高才压得住
+  const alpha = Math.min(0.30, Math.max(0.14, 0.14 + stdDev / 280));
 
   ctx.save();
-  ctx.globalAlpha = 0.22; // 半透明，数值越大水印越明显
+  ctx.globalAlpha = alpha;
   ctx.fillStyle = watermarkColor;
   ctx.shadowColor = shadowColor;
   ctx.shadowBlur = 2;
