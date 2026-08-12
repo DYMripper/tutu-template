@@ -55,7 +55,7 @@ function drawWatermark(ctx, width, height) {
   const watermarkColor = isLightImage ? '#000000' : '#ffffff';
   const shadowColor = isLightImage ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
   // 背景越单一干净（stdDev小），透明度低一点就够看清；背景越花哨杂乱（stdDev大），适当调高才压得住
-  const alpha = Math.min(0.22, Math.max(0.08, 0.08 + stdDev / 320));
+  const alpha = Math.min(0.14, Math.max(0.04, 0.04 + stdDev / 320));
 
   ctx.save();
   ctx.globalAlpha = alpha;
