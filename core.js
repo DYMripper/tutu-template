@@ -25,6 +25,37 @@ export function setStatus(text, kind) {
 
 // 图片压缩：上传前把长边限制在2000px以内，JPEG按0.85质量重新编码（PNG保留原格式，只缩尺寸）
 // 压缩/读取失败时退回用原图，不阻断上传
+// 把水印真正画进图片像素里（不是CSS叠加层），这样不管对方用什么手段拿到文件，
+// 水印都是文件内容本身的一部分，没法靠F12开发者工具绕过
+const WATERMARK_TEXT = 'TUTU STUDIO   荼荼工作室   防盗预览';
+function drawWatermark(ctx, width, height) {
+  ctx.save();
+  ctx.globalAlpha = 0.14; // 半透明，不影响正常观感
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.shadowBlur = 2;
+  ctx.shadowOffsetX = 1;
+  ctx.shadowOffsetY = 1;
+  const fontSize = Math.max(16, Math.round(width * 0.035));
+  ctx.font = `bold ${fontSize}px sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+
+  const diag = Math.ceil(Math.sqrt(width * width + height * height));
+  const stepX = Math.max(160, Math.round(width * 0.32));
+  const stepY = Math.max(90, Math.round(fontSize * 4));
+  ctx.translate(width / 2, height / 2);
+  ctx.rotate((-25 * Math.PI) / 180);
+  ctx.translate(-diag / 2, -diag / 2);
+
+  for (let y = 0; y <= diag; y += stepY) {
+    for (let x = 0; x <= diag; x += stepX) {
+      ctx.fillText(WATERMARK_TEXT, x, y);
+    }
+  }
+  ctx.restore();
+}
+
 export function compressImage(file, maxDim, quality) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -37,7 +68,9 @@ export function compressImage(file, maxDim, quality) {
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, width, height);
+      drawWatermark(ctx, width, height);
       const isPng = file.type === 'image/png';
       canvas.toBlob(
         (blob) => {
