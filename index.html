@@ -187,7 +187,7 @@
   .crumb .current{color:var(--accent); font-weight:700;}
 
   /* -------------------------------------------------------------
-   * 4. 主体布局与首页三层纸张堆叠效果卡片 (Cat Grid)
+   * 4. 主体布局与首页三层重叠纸张卡片 (Cat Grid)
    * ------------------------------------------------------------- */
   main{padding:46px 0 90px;}
 
@@ -348,8 +348,9 @@
     100% { transform: translateX(100%); }
   }
 
+  /* 图片整张适配屏幕：max-width + max-height 双重限制，浏览器自动按屏幕大小缩放，不裁切 */
   .secure-img-wrapper img { 
-    max-width: 100%; max-height: 85vh; width: auto; height: auto; display: block; margin: 0 auto;
+    max-width: 100%; max-height: 76vh; width: auto; height: auto; display: block; margin: 0 auto;
     opacity: 0; transition: opacity 0.4s cubic-bezier(0.215, 0.610, 0.355, 1); 
     position: relative; z-index: 2;
   }
@@ -411,13 +412,29 @@
   }
   .lightbox-close:hover{background:#F1ECE1; color:#1C1813;}
 
+  /* 左右切换箭头 */
+  .lightbox-nav{
+    appearance:none; border:1.5px solid #F1ECE1; background:transparent;
+    color:#F1ECE1; border-radius:100px; width:44px; height:44px;
+    cursor:pointer; font-size:24px; line-height:1; position:absolute; top:50%; transform:translateY(-50%);
+    display:flex; align-items:center; justify-content:center; transition:background .15s ease, color .15s ease; z-index: 60;
+  }
+  .lightbox-nav:hover{background:#F1ECE1; color:#1C1813;}
+  .lightbox-prev{ left:20px; }
+  .lightbox-next{ right:20px; }
+  @media (max-width: 767px){
+    .lightbox-prev{ left:8px; }
+    .lightbox-next{ right:8px; }
+    .lightbox-nav{ width:36px; height:36px; font-size:18px; }
+  }
+
   /* 桌面端（视口宽度≥768px）放大预览弹窗；768px以下（基本涵盖所有手机）维持原来的手机端样式不变 */
   @media (min-width: 768px) {
     .lightbox-inner {
       max-width: min(1100px, 90vw);
     }
     .lightbox-scroll-container {
-      max-height: 88vh;
+      max-height: 80vh;
     }
   }
   /* -------------------------------------------------------------
@@ -482,6 +499,8 @@
 
 <div class="lightbox" id="lightbox">
   <button class="lightbox-close" id="lightboxClose">✕</button>
+  <button class="lightbox-nav lightbox-prev" id="lightboxPrev">‹</button>
+  <button class="lightbox-nav lightbox-next" id="lightboxNext">›</button>
   <div class="lightbox-inner">
     <div class="lightbox-scroll-container" id="lightboxScrollBox"></div>
     
@@ -505,8 +524,7 @@
   </div>
 </div>
 
-<!-- <script src="data.js?v=9"></script> -->
-<script src="app.js?v=9"></script>
+<script src="app.js?v=11"></script>
 
 </body>
 </html>
