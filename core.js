@@ -30,7 +30,7 @@ export function setStatus(text, kind) {
 const WATERMARK_TEXT = 'TUTU STUDIO   荼荼工作室   防盗预览';
 function drawWatermark(ctx, width, height) {
   ctx.save();
-  ctx.globalAlpha = 0.22; // 半透明，不影响正常观感
+  ctx.globalAlpha = 0.4; // 半透明，不影响正常观感
   ctx.fillStyle = '#ffffff';
   ctx.shadowColor = 'rgba(0,0,0,0.25)';
   ctx.shadowBlur = 2;
