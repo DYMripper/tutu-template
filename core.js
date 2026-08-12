@@ -36,14 +36,17 @@ function drawWatermark(ctx, width, height) {
   ctx.shadowBlur = 2;
   ctx.shadowOffsetX = 1;
   ctx.shadowOffsetY = 1;
-  const fontSize = Math.max(16, Math.round(width * 0.035));
+  const fontSize = Math.max(14, Math.round(width * 0.022));
   ctx.font = `bold ${fontSize}px sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
 
+  // 间距按文字实际渲染宽度算，而不是图片宽度的固定比例——不然字一长，相邻两份水印就挤在一起看不清
+  const textWidth = ctx.measureText(WATERMARK_TEXT).width;
+  const stepX = textWidth + fontSize * 6;
+  const stepY = fontSize * 7;
+
   const diag = Math.ceil(Math.sqrt(width * width + height * height));
-  const stepX = Math.max(160, Math.round(width * 0.32));
-  const stepY = Math.max(90, Math.round(fontSize * 4));
   ctx.translate(width / 2, height / 2);
   ctx.rotate((-25 * Math.PI) / 180);
   ctx.translate(-diag / 2, -diag / 2);
