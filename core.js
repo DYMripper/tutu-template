@@ -28,11 +28,31 @@ export function setStatus(text, kind) {
 // 把水印真正画进图片像素里（不是CSS叠加层），这样不管对方用什么手段拿到文件，
 // 水印都是文件内容本身的一部分，没法靠F12开发者工具绕过
 const WATERMARK_TEXT = 'TUTU STUDIO   荼荼工作室   防盗预览';
+
+// 采样canvas上已经画好的图片像素，算个大概的整体亮度（0全黑～255全白）
+// 每隔一定间隔取一个点，不用扫全部像素，避免大图片卡顿
+function getAverageBrightness(ctx, width, height) {
+  const data = ctx.getImageData(0, 0, width, height).data;
+  const sampleStride = 4 * 20; // 每隔20个像素采样一次
+  let total = 0;
+  let count = 0;
+  for (let i = 0; i < data.length; i += sampleStride) {
+    total += 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    count++;
+  }
+  return count > 0 ? total / count : 128;
+}
+
 function drawWatermark(ctx, width, height) {
+  const brightness = getAverageBrightness(ctx, width, height);
+  const isLightImage = brightness > 140; // 阈值，图偏亮就用深色水印，图偏暗就用浅色水印
+  const watermarkColor = isLightImage ? '#000000' : '#ffffff';
+  const shadowColor = isLightImage ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
+
   ctx.save();
-  ctx.globalAlpha = 0.4; // 半透明，不影响正常观感
-  ctx.fillStyle = '#ffffff';
-  ctx.shadowColor = 'rgba(0,0,0,0.25)';
+  ctx.globalAlpha = 0.22; // 半透明，数值越大水印越明显
+  ctx.fillStyle = watermarkColor;
+  ctx.shadowColor = shadowColor;
   ctx.shadowBlur = 2;
   ctx.shadowOffsetX = 1;
   ctx.shadowOffsetY = 1;
