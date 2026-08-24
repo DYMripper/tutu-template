@@ -184,13 +184,18 @@ async function getFFmpeg() {
   const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
   console.log('[水印测试] 1b/6 正在下载 ffmpeg-core.wasm…');
   const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-  console.log('[水印测试] 1c/6 正在下载 worker.js…');
-  const classWorkerURL = await toBlobURL(
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.6/dist/esm/worker.js',
-    'text/javascript'
-  );
-  console.log('[水印测试] 1d/6 三个文件都下载完了，开始初始化ffmpeg…');
-  await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
+  console.log('[水印测试] 1c/6 正在准备 worker.js…');
+
+  const classWorkerURL =
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js';
+
+  console.log('[水印测试] 1d/6 三个文件都准备完了，开始初始化ffmpeg…');
+
+  await ffmpeg.load({
+    coreURL,
+    wasmURL,
+    classWorkerURL
+  });
   console.log('[水印测试] 2/6 ffmpeg核心加载完成');
   ffmpegInstance = ffmpeg;
   return ffmpeg;
