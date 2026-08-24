@@ -186,8 +186,7 @@ async function getFFmpeg() {
   const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
   console.log('[水印测试] 1c/6 正在准备 worker.js…');
 
-  const classWorkerURL =
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js';
+  const classWorkerURL = '/ffmpeg/worker.js';
 
   console.log('[水印测试] 1d/6 三个文件都准备完了，开始初始化ffmpeg…');
 
