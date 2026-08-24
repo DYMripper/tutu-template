@@ -1,9 +1,12 @@
 // ------- "新增模板"面板 -------
-import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, levenshtein } from '../core.js';
+import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, levenshtein, captureVideoFrame } from '../core.js';
 
 const catSelect = document.getElementById('catSelect');
 const newCatToggle = document.getElementById('newCatToggle');
 const newCatBox = document.getElementById('newCatBox');
+const videoModeCheck = document.getElementById('videoModeCheck');
+const fileInput = document.getElementById('fileInput');
+const fileFieldsetLegend = document.getElementById('fileFieldsetLegend');
 
 // 根据当前选中的分类，从已有编号里猜出编号前缀，自动填进"编号前缀"框（仍可手动改）
 // 同时把颜色也带出来（取这个分类现有模板用的颜色），不用每次手动调色
@@ -46,16 +49,30 @@ export function initUpload() {
     document.getElementById('colorAlphaLabel').textContent = e.target.value + '%';
   });
 
+  videoModeCheck.addEventListener('change', () => {
+    const isVideo = videoModeCheck.checked;
+    fileInput.accept = isVideo ? 'video/mp4' : 'image/*';
+    fileFieldsetLegend.textContent = isVideo
+      ? '视频（可多选，每个视频各自变成一个新模板，编号从文件名里的数字自动提取）'
+      : '图片（可多选，每张图各自变成一个新模板，编号从文件名里的数字自动提取）';
+    fileInput.value = '';
+    document.getElementById('filePreview').innerHTML = '';
+  });
+
   // 选好文件后，先在页面上预览一遍，确认没选错再上传
-  document.getElementById('fileInput').addEventListener('change', (e) => {
+  fileInput.addEventListener('change', (e) => {
     const preview = document.getElementById('filePreview');
     preview.innerHTML = '';
+    const isVideo = videoModeCheck.checked;
     Array.from(e.target.files).forEach((file) => {
       const url = URL.createObjectURL(file);
       const wrap = document.createElement('div');
       wrap.style.cssText = 'text-align:center;';
+      const mediaTag = isVideo
+        ? `<video src="${url}" muted style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block;"></video>`
+        : `<img src="${url}" style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block;">`;
       wrap.innerHTML = `
-        <img src="${url}" style="width:64px;height:64px;object-fit:cover;border-radius:4px;border:1px solid var(--line);display:block;">
+        ${mediaTag}
         <div style="font-size:10px;color:var(--ink-soft);max-width:64px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px;">${file.name}</div>
       `;
       preview.appendChild(wrap);
@@ -121,23 +138,42 @@ async function handleSubmit() {
       );
     }
 
+    const isVideo = videoModeCheck.checked;
     const items = [];
-    setStatus('正在上传图片 0/' + parsedFiles.length);
+    setStatus(`正在上传${isVideo ? '视频' : '图片'} 0/${parsedFiles.length}`);
     for (let i = 0; i < parsedFiles.length; i++) {
       const { file, intPart } = parsedFiles[i];
       const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
-      const toUpload = await compressImage(file, 2000, 0.85);
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
-      const hash = await hashBlob(toUpload);
-      // key里带内容指纹：图片内容不变哈希就不变，内容一变哈希跟着变，URL自动换新，浏览器/CDN缓存不用手动清
-      const key = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${hash}.${ext}`;
-      const imageUrl = await uploadToWorker(key, toUpload);
-      uploadedKeysThisAttempt.push(key);
+
+      if (isVideo) {
+        // 视频：截第一帧当缩略图（顺手加水印），原视频文件不压缩、不加水印，直接原样上传
+        const posterBlob = await captureVideoFrame(file);
+        const posterHash = await hashBlob(posterBlob);
+        const posterKey = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${posterHash}.jpg`;
+        const posterUrl = await uploadToWorker(posterKey, posterBlob);
+        uploadedKeysThisAttempt.push(posterKey);
+
+        const videoHash = await hashBlob(file);
+        const videoKey = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${videoHash}.mp4`;
+        const videoUrl = await uploadToWorker(videoKey, file);
+        uploadedKeysThisAttempt.push(videoKey);
+
+        items.push({ code, images: [posterUrl], video: videoUrl, color, ratio });
+      } else {
+        const toUpload = await compressImage(file, 2000, 0.85);
+        const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+        const hash = await hashBlob(toUpload);
+        // key里带内容指纹：图片内容不变哈希就不变，内容一变哈希跟着变，URL自动换新，浏览器/CDN缓存不用手动清
+        const key = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${hash}.${ext}`;
+        const imageUrl = await uploadToWorker(key, toUpload);
+        uploadedKeysThisAttempt.push(key);
+        items.push({ code, images: [imageUrl], color, ratio });
+      }
+
       progressFill.style.width = (((i + 1) / parsedFiles.length) * 100) + '%';
-      items.push({ code, images: [imageUrl], color, ratio });
-      setStatus(`正在上传图片 ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
+      setStatus(`正在上传${isVideo ? '视频' : '图片'} ${i + 1}/${parsedFiles.length}（编号 ${code}）`);
     }
-    setStatus('图片传完了，正在批量更新模板列表…');
+    setStatus('传完了，正在批量更新模板列表…');
     const addRes = await fetch(API_BASE + '/addbatch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Admin-Token': session.token },

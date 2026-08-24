@@ -299,6 +299,12 @@
     position:absolute; top:9px; left:9px; background:var(--ink); color:var(--paper);
     font-family:'Space Mono',monospace; font-size:11px; letter-spacing:.04em; padding:3px 8px; border-radius:2px; z-index: 2;
   }
+  /* 视频模板缩略图上的播放图标 */
+  .poster-thumb .play-icon{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:36px; height:36px; border-radius:100px; background:rgba(28,24,19,.55); color:#F1ECE1;
+    display:flex; align-items:center; justify-content:center; font-size:14px; z-index: 2; pointer-events:none;
+  }
   /* 无图情况下的兜底正中色块文字标识 */
   .poster-thumb .center-mark{
     position:absolute; inset:0; display:flex; align-items:center; justify-content:center;

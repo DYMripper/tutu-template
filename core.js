@@ -49,13 +49,13 @@ function analyzeImageTone(ctx, width, height) {
   return { brightness, stdDev };
 }
 
-function drawWatermark(ctx, width, height) {
+export function drawWatermark(ctx, width, height) {
   const { brightness, stdDev } = analyzeImageTone(ctx, width, height);
   const isLightImage = brightness > 140; // 阈值，图偏亮就用深色水印，图偏暗就用浅色水印
   const watermarkColor = isLightImage ? '#000000' : '#ffffff';
   const shadowColor = isLightImage ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.35)';
   // 背景越单一干净（stdDev小），透明度低一点就够看清；背景越花哨杂乱（stdDev大），适当调高才压得住
-  const alpha = Math.min(0.07, Math.max(0.01, 0.01 + stdDev / 320));
+  const alpha = Math.min(0.14, Math.max(0.04, 0.04 + stdDev / 320));
 
   ctx.save();
   ctx.globalAlpha = alpha;
@@ -163,4 +163,43 @@ export function levenshtein(a, b) {
     }
   }
   return dp[m][n];
+}
+
+// 截取视频的第一帧当缩略图，顺手盖上水印（复用上面同一套水印逻辑）
+// 注意：这里只给"缩略图这一帧"加了水印，视频真正播放的内容目前没有水印——
+// 给整段视频加水印需要逐帧处理/转码，工作量完全是另一个量级，先不做
+export function captureVideoFrame(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    const url = URL.createObjectURL(file);
+    video.src = url;
+
+    video.onloadeddata = () => {
+      // 跳到稍微靠前一点点的位置（不是绝对第0帧），避免有些视频开头是纯黑/空白
+      video.currentTime = Math.min(0.1, (video.duration || 1) / 2);
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      drawWatermark(ctx, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          URL.revokeObjectURL(url);
+          resolve(blob);
+        },
+        'image/jpeg',
+        0.85
+      );
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('视频读取失败，确认一下是不是标准的mp4格式'));
+    };
+  });
 }

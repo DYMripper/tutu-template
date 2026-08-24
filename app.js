@@ -167,6 +167,7 @@ function openCategory(key){
     card.innerHTML = `
       <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
         ${firstImg ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
+        ${item.type === 'video' ? '<span class="play-icon">▶</span>' : ''}
         <span class="tag">${item.code}</span>
       </div>
       <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
@@ -230,6 +231,7 @@ searchInput.addEventListener('input', (e) => {
         card.innerHTML = `
           <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
             ${firstImg ? '' : `<div class="center-mark">${cat.name}<br>${item.code}</div>`}
+            ${item.type === 'video' ? '<span class="play-icon">▶</span>' : ''}
             <span class="tag">${item.code}</span>
           </div>
           <div class="poster-meta"><span>${item.code}</span><span>${cat.name}</span></div>
@@ -284,6 +286,25 @@ function openLightbox(list, index){
     hiddenQrWrap.style.maxHeight = "0";
     hiddenQrWrap.style.marginTop = "0";
     lightboxCatName.style.marginTop = "0px";
+  }
+
+  if (item.type === 'video' && item.video) {
+    const posterUrl = Array.isArray(item.image) ? item.image[0] : item.image;
+    const video = document.createElement('video');
+    video.src = item.video;
+    if (posterUrl) video.poster = posterUrl;
+    video.controls = true;
+    video.playsInline = true;
+    video.style.cssText = 'max-width:100%; max-height:76vh; width:auto; height:auto; display:block; margin:0 auto; border-radius:4px;';
+    lightboxScrollBox.appendChild(video);
+
+    lightboxCode.textContent = "编号：" + item.code;
+    lightboxCatName.textContent = "分类：" + cat.name;
+
+    lightbox.classList.add('show');
+    document.body.style.overflow = 'hidden';
+    lightboxScrollBox.scrollTop = 0;
+    return;
   }
 
   const images = Array.isArray(item.image) ? item.image : [item.image];
