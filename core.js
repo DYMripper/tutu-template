@@ -212,18 +212,23 @@ export function captureVideoFrame(file) {
 let ffmpegInstance = null;
 async function getFFmpeg() {
   if (ffmpegInstance) return ffmpegInstance;
+  console.log('[水印进度] 1/6 开始加载ffmpeg核心文件…');
   const ffmpeg = new FFmpeg();
   ffmpeg.on('log', ({ message }) => {
     console.log('[ffmpeg]', message); // 打到控制台，方便确认它是不是真的在处理（能看到逐帧进度）
   });
   const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-  await ffmpeg.load({
-    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
-    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本要从@ffmpeg/ffmpeg这个包本身取（不是@ffmpeg/core），
-    // 且要转成本地blob地址（浏览器不允许直接用跨域地址建Worker）
-    classWorkerURL: await toBlobURL('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js', 'text/javascript'),
-  });
+  console.log('[水印进度] 1a/6 正在下载 ffmpeg-core.js…');
+  const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+  console.log('[水印进度] 1b/6 正在下载 ffmpeg-core.wasm…');
+  const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+  console.log('[水印进度] 1c/6 正在下载 worker.js…');
+  // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本要从@ffmpeg/ffmpeg这个包本身取（不是@ffmpeg/core），
+  // 且要转成本地blob地址（浏览器不允许直接用跨域地址建Worker）
+  const classWorkerURL = await toBlobURL('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js', 'text/javascript');
+  console.log('[水印进度] 1d/6 三个文件都下载完了，开始初始化ffmpeg…');
+  await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
+  console.log('[水印进度] 2/6 ffmpeg核心加载完成');
   ffmpegInstance = ffmpeg;
   return ffmpeg;
 }
@@ -240,11 +245,14 @@ export async function watermarkVideo(file, onProgress) {
     });
   }
 
+  console.log('[水印进度] 3/6 正在把原始视频写入ffmpeg的虚拟文件系统…');
   await ffmpeg.writeFile('input.mp4', await fetchFile(file));
+  console.log('[水印进度] 4/6 原始视频写入完成，正在加载字体文件…');
 
   // drawtext滤镜需要显式指定字体文件——放在你自己网站根目录的font.ttf，不依赖猜第三方CDN地址（之前猜错过两次）
   const fontData = await fetchFile('https://tutu.dymripper.com/font.ttf');
   await ffmpeg.writeFile('font.ttf', fontData);
+  console.log('[水印进度] 5/6 字体加载完成，开始执行编码命令（这一步之后应该会持续刷[ffmpeg]开头的日志）…');
 
   // 2x2网格平铺水印文字，半透明白色（跟图片水印的"多处平铺"思路一致，只是没做旋转/自适应颜色，先保证能用）
   const drawText = (x, y) =>
@@ -257,6 +265,7 @@ export async function watermarkVideo(file, onProgress) {
   ].join(',');
 
   await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-preset', 'ultrafast', '-c:a', 'copy', 'output.mp4']);
+  console.log('[水印进度] 6/6 编码完成，正在读取结果文件…');
 
   const data = await ffmpeg.readFile('output.mp4');
   return new Blob([data.buffer], { type: 'video/mp4' });
