@@ -81,6 +81,15 @@
       <button class="primary" id="submitBtn">上传</button>
       <div class="progressBar" id="progressBar"><div id="progressFill"></div></div>
       <div id="status"></div>
+
+      <fieldset style="margin-top:24px; border-color:var(--accent);">
+        <legend style="color:var(--accent);">🧪 视频水印测试（独立测试，不会真正上传，不影响正式功能）</legend>
+        <label>选一个mp4测试一下</label>
+        <input type="file" id="videoTestFile" accept="video/mp4">
+        <button class="primary" id="videoTestBtn" style="margin-top:10px;">测试加水印</button>
+        <div id="videoTestStatus" style="margin-top:10px; font-family:'Space Mono',monospace; font-size:13px;"></div>
+        <div id="videoTestResult"></div>
+      </fieldset>
     </div>
 
     <div id="deletePanel" style="display:none;">

@@ -3,6 +3,7 @@ import { API_BASE, DATA_JSON_URL, session, state } from './core.js';
 import { initUpload, refreshUploadPanel } from './modules/upload.js';
 import { initDelete, refreshDeletePanel } from './modules/delete.js';
 import { initCategoryManage, refreshCategoryManage } from './modules/category.js';
+import { initVideoTest } from './modules/videotest.js';
 
 // ---- 登录门禁 ----
 const gate = document.getElementById('gate');
@@ -81,4 +82,5 @@ document.addEventListener('tutu:refresh', loadCategories);
 initUpload();
 initDelete();
 initCategoryManage();
+initVideoTest();
 tabUpload.click(); // 默认打开"新增"这个标签页

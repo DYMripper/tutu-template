@@ -1,4 +1,8 @@
 // ------- 荼荼上传后台 · 共用配置与工具函数 -------
+// 视频水印测试功能用，跟正式上传流程无关
+import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+import { toBlobURL, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+
 // 这两项换成你自己的 Worker 地址 / data.json 地址
 export const API_BASE = "https://newtutu.dymripper.com";
 export const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
@@ -165,7 +169,65 @@ export function levenshtein(a, b) {
   return dp[m][n];
 }
 
-// 截取视频的第一帧当缩略图，顺手盖上水印（复用上面同一套水印逻辑）
+// ------- 视频加水印测试（隔离测试用，不接入正式上传流程） -------
+// 换成jsdelivr（之前用过unpkg），两家CDN在"包内部文件互相引用"这块处理方式不完全一样，值得单独测一次
+let ffmpegInstance = null;
+async function getFFmpeg() {
+  if (ffmpegInstance) return ffmpegInstance;
+  console.log('[水印测试] 1/6 开始加载ffmpeg核心文件…');
+  const ffmpeg = new FFmpeg();
+  ffmpeg.on('log', ({ message }) => {
+    console.log('[ffmpeg]', message);
+  });
+  const baseURL = 'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+  console.log('[水印测试] 1a/6 正在下载 ffmpeg-core.js…');
+  const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
+  console.log('[水印测试] 1b/6 正在下载 ffmpeg-core.wasm…');
+  const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
+  console.log('[水印测试] 1c/6 正在下载 worker.js…');
+  const classWorkerURL = await toBlobURL(
+    'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js',
+    'text/javascript'
+  );
+  console.log('[水印测试] 1d/6 三个文件都下载完了，开始初始化ffmpeg…');
+  await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
+  console.log('[水印测试] 2/6 ffmpeg核心加载完成');
+  ffmpegInstance = ffmpeg;
+  return ffmpeg;
+}
+
+export async function watermarkVideoTest(file, onProgress) {
+  const ffmpeg = await getFFmpeg();
+
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(Math.min(99, Math.max(0, Math.round(progress * 100))));
+    });
+  }
+
+  console.log('[水印测试] 3/6 正在写入原始视频…');
+  await ffmpeg.writeFile('input.mp4', await fetchFile(file));
+  console.log('[水印测试] 4/6 写入完成，正在加载字体文件…');
+
+  const fontData = await fetchFile('https://tutu.dymripper.com/font.ttf');
+  await ffmpeg.writeFile('font.ttf', fontData);
+  console.log('[水印测试] 5/6 字体加载完成，开始执行编码命令…');
+
+  const drawText = (x, y) =>
+    `drawtext=text='TUTU STUDIO':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
+  const filter = [
+    drawText('w*0.08', 'h*0.15'),
+    drawText('w*0.55', 'h*0.15'),
+    drawText('w*0.08', 'h*0.55'),
+    drawText('w*0.55', 'h*0.55'),
+  ].join(',');
+
+  await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-preset', 'ultrafast', '-c:a', 'copy', 'output.mp4']);
+  console.log('[水印测试] 6/6 编码完成，正在读取结果…');
+
+  const data = await ffmpeg.readFile('output.mp4');
+  return new Blob([data.buffer], { type: 'video/mp4' });
+}
 // 视频本身的水印是另一个函数（watermarkVideo）处理的，跟这个截帧函数是两回事
 export function captureVideoFrame(file) {
   return new Promise((resolve, reject) => {
