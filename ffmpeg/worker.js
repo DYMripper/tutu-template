@@ -6,22 +6,12 @@ import { ERROR_UNKNOWN_MESSAGE_TYPE, ERROR_NOT_LOADED, ERROR_IMPORT_FAILURE, } f
 let ffmpeg;
 const load = async ({ coreURL: _coreURL, wasmURL: _wasmURL, workerURL: _workerURL, }) => {
     const first = !ffmpeg;
-    try {
-        if (!_coreURL)
-            _coreURL = CORE_URL;
-        // when web worker type is `classic`.
-        importScripts(_coreURL);
-    }
-    catch {
-        if (!_coreURL)
-            _coreURL = CORE_URL.replace('/umd/', '/esm/');
-        // when web worker type is `module`.
-        self.createFFmpegCore = (await import(
-        /* webpackIgnore: true */ /* @vite-ignore */ _coreURL)).default;
-        if (!self.createFFmpegCore) {
-            throw ERROR_IMPORT_FAILURE;
-        }
-    }
+
+    if (!_coreURL)
+        _coreURL = CORE_URL;
+
+    importScripts(_coreURL);
+    
     const coreURL = _coreURL;
     const wasmURL = _wasmURL ? _wasmURL : _coreURL.replace(/.js$/g, ".wasm");
     const workerURL = _workerURL
