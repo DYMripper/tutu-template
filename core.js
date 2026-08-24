@@ -1,6 +1,8 @@
 // ------- 荼荼上传后台 · 共用配置与工具函数 -------
-import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.10';
-import { toBlobURL, fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1';
+// FFmpeg主类和它的Worker必须用同一个来源（都用unpkg原始文件），
+// 之前一个从esm.sh一个从unpkg，两边构建方式不一致导致内部通信握手卡死
+import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
+import { toBlobURL, fetchFile } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
 
 // 这两项换成你自己的 Worker 地址 / data.json 地址
 export const API_BASE = "https://newtutu.dymripper.com";
