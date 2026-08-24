@@ -879,7 +879,7 @@ export async function watermarkVideoTest(
 
   const drawText =
     (x, y) =>
-      `drawtext=text='TUTU STUDIO':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
+      `drawtext=text='TUTU STUDIO   荼荼工作室   防盗预览':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
 
   const filter = [
     drawText(
