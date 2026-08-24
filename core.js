@@ -213,6 +213,9 @@ let ffmpegInstance = null;
 async function getFFmpeg() {
   if (ffmpegInstance) return ffmpegInstance;
   const ffmpeg = new FFmpeg();
+  ffmpeg.on('log', ({ message }) => {
+    console.log('[ffmpeg]', message); // 打到控制台，方便确认它是不是真的在处理（能看到逐帧进度）
+  });
   const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
