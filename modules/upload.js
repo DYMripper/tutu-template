@@ -1,5 +1,5 @@
 // ------- "新增模板"面板 -------
-import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, levenshtein, captureVideoFrame, watermarkVideo } from '../core.js';
+import { API_BASE, session, state, setStatus, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, levenshtein, captureVideoFrame } from '../core.js';
 
 const catSelect = document.getElementById('catSelect');
 const newCatToggle = document.getElementById('newCatToggle');
@@ -146,21 +146,16 @@ async function handleSubmit() {
       const code = `${manualPrefix}-${intPart.padStart(CODE_WIDTH, '0')}`;
 
       if (isVideo) {
-        // 视频：截第一帧当缩略图（顺手加水印）；原视频本身也要加水印，这一步比较慢
+        // 视频：截第一帧当缩略图（顺手加水印）；原视频文件本身暂不加水印，直接原样上传
         const posterBlob = await captureVideoFrame(file);
         const posterHash = await hashBlob(posterBlob);
         const posterKey = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${posterHash}.jpg`;
         const posterUrl = await uploadToWorker(posterKey, posterBlob);
         uploadedKeysThisAttempt.push(posterKey);
 
-        setStatus(`正在给视频加水印（编号 ${code}）… 这一步会比较慢，请耐心等`);
-        const watermarkedVideoBlob = await watermarkVideo(file, (pct) => {
-          setStatus(`正在给视频加水印（编号 ${code}）… ${pct}%`);
-        });
-
-        const videoHash = await hashBlob(watermarkedVideoBlob);
+        const videoHash = await hashBlob(file);
         const videoKey = `Templates/${categoryKey}/${manualPrefix}-${intPart}-${videoHash}.mp4`;
-        const videoUrl = await uploadToWorker(videoKey, watermarkedVideoBlob);
+        const videoUrl = await uploadToWorker(videoKey, file);
         uploadedKeysThisAttempt.push(videoKey);
 
         items.push({ code, images: [posterUrl], video: videoUrl, color, ratio });

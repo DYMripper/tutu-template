@@ -1,9 +1,4 @@
 // ------- 荼荼上传后台 · 共用配置与工具函数 -------
-// FFmpeg主类和它的Worker必须用同一个来源（都用unpkg原始文件），
-// 之前一个从esm.sh一个从unpkg，两边构建方式不一致导致内部通信握手卡死
-import { FFmpeg } from 'https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
-import { toBlobURL, fetchFile } from 'https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js';
-
 // 这两项换成你自己的 Worker 地址 / data.json 地址
 export const API_BASE = "https://newtutu.dymripper.com";
 export const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
@@ -206,69 +201,4 @@ export function captureVideoFrame(file) {
       reject(new Error('视频读取失败，确认一下是不是标准的mp4格式'));
     };
   });
-}
-
-// ------- 视频加水印（用 ffmpeg.wasm 逐帧重新编码，比图片水印重得多，处理会比较慢） -------
-// 注意：这部分依赖浏览器加载 ffmpeg.wasm 这个库（约20-30MB）+ 一个字体文件，
-// 第一次用之前没有实际浏览器环境测过，如果加载/编码报错，把报错信息发回来，照着错误信息调整
-let ffmpegInstance = null;
-async function getFFmpeg() {
-  if (ffmpegInstance) return ffmpegInstance;
-  console.log('[水印进度] 1/6 开始加载ffmpeg核心文件…');
-  const ffmpeg = new FFmpeg();
-  ffmpeg.on('log', ({ message }) => {
-    console.log('[ffmpeg]', message); // 打到控制台，方便确认它是不是真的在处理（能看到逐帧进度）
-  });
-  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-  console.log('[水印进度] 1a/6 正在下载 ffmpeg-core.js…');
-  const coreURL = await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript');
-  console.log('[水印进度] 1b/6 正在下载 ffmpeg-core.wasm…');
-  const wasmURL = await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm');
-  console.log('[水印进度] 1c/6 正在下载 worker.js…');
-  // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本要从@ffmpeg/ffmpeg这个包本身取（不是@ffmpeg/core），
-  // 且要转成本地blob地址（浏览器不允许直接用跨域地址建Worker）
-  const classWorkerURL = await toBlobURL('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js', 'text/javascript');
-  console.log('[水印进度] 1d/6 三个文件都下载完了，开始初始化ffmpeg…');
-  await ffmpeg.load({ coreURL, wasmURL, classWorkerURL });
-  console.log('[水印进度] 2/6 ffmpeg核心加载完成');
-  ffmpegInstance = ffmpeg;
-  return ffmpeg;
-}
-
-// 给视频本身加水印：文字用英文（"TUTU STUDIO"），不用中文——
-// 因为ffmpeg.wasm不认系统字体，要显式打包一个字体文件进去，中文字体体积比英文字体大得多，
-// 先用英文控制体积和处理时间，以后需要中文水印可以再换成中文字体（体积会明显变大）
-export async function watermarkVideo(file, onProgress) {
-  const ffmpeg = await getFFmpeg();
-
-  if (onProgress) {
-    ffmpeg.on('progress', ({ progress }) => {
-      onProgress(Math.min(99, Math.max(0, Math.round(progress * 100))));
-    });
-  }
-
-  console.log('[水印进度] 3/6 正在把原始视频写入ffmpeg的虚拟文件系统…');
-  await ffmpeg.writeFile('input.mp4', await fetchFile(file));
-  console.log('[水印进度] 4/6 原始视频写入完成，正在加载字体文件…');
-
-  // drawtext滤镜需要显式指定字体文件——放在你自己网站根目录的font.ttf，不依赖猜第三方CDN地址（之前猜错过两次）
-  const fontData = await fetchFile('https://tutu.dymripper.com/font.ttf');
-  await ffmpeg.writeFile('font.ttf', fontData);
-  console.log('[水印进度] 5/6 字体加载完成，开始执行编码命令（这一步之后应该会持续刷[ffmpeg]开头的日志）…');
-
-  // 2x2网格平铺水印文字，半透明白色（跟图片水印的"多处平铺"思路一致，只是没做旋转/自适应颜色，先保证能用）
-  const drawText = (x, y) =>
-    `drawtext=text='TUTU STUDIO':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
-  const filter = [
-    drawText('w*0.08', 'h*0.15'),
-    drawText('w*0.55', 'h*0.15'),
-    drawText('w*0.08', 'h*0.55'),
-    drawText('w*0.55', 'h*0.55'),
-  ].join(',');
-
-  await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-preset', 'ultrafast', '-c:a', 'copy', 'output.mp4']);
-  console.log('[水印进度] 6/6 编码完成，正在读取结果文件…');
-
-  const data = await ffmpeg.readFile('output.mp4');
-  return new Blob([data.buffer], { type: 'video/mp4' });
 }
