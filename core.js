@@ -217,9 +217,9 @@ async function getFFmpeg() {
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
-    // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本默认指向esm.sh（跨域），
-    // 浏览器不允许直接用跨域地址建Worker，同样转成本地blob地址才能用
-    classWorkerURL: await toBlobURL('https://esm.sh/@ffmpeg/ffmpeg@0.12.10/es2022/worker.js', 'text/javascript'),
+    // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本要从@ffmpeg/ffmpeg这个包本身取（不是@ffmpeg/core），
+    // 且要转成本地blob地址（浏览器不允许直接用跨域地址建Worker）
+    classWorkerURL: await toBlobURL('https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/worker.js', 'text/javascript'),
   });
   ffmpegInstance = ffmpeg;
   return ffmpeg;
@@ -253,7 +253,7 @@ export async function watermarkVideo(file, onProgress) {
     drawText('w*0.55', 'h*0.55'),
   ].join(',');
 
-  await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-c:a', 'copy', 'output.mp4']);
+  await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-preset', 'ultrafast', '-c:a', 'copy', 'output.mp4']);
 
   const data = await ffmpeg.readFile('output.mp4');
   return new Blob([data.buffer], { type: 'video/mp4' });
