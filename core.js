@@ -1,4 +1,7 @@
 // ------- 荼荼上传后台 · 共用配置与工具函数 -------
+import { FFmpeg } from 'https://esm.sh/@ffmpeg/ffmpeg@0.12.10';
+import { toBlobURL, fetchFile } from 'https://esm.sh/@ffmpeg/util@0.12.1';
+
 // 这两项换成你自己的 Worker 地址 / data.json 地址
 export const API_BASE = "https://newtutu.dymripper.com";
 export const DATA_JSON_URL = "https://newtutu.dymripper.com/data.json";
@@ -166,8 +169,7 @@ export function levenshtein(a, b) {
 }
 
 // 截取视频的第一帧当缩略图，顺手盖上水印（复用上面同一套水印逻辑）
-// 注意：这里只给"缩略图这一帧"加了水印，视频真正播放的内容目前没有水印——
-// 给整段视频加水印需要逐帧处理/转码，工作量完全是另一个量级，先不做
+// 视频本身的水印是另一个函数（watermarkVideo）处理的，跟这个截帧函数是两回事
 export function captureVideoFrame(file) {
   return new Promise((resolve, reject) => {
     const video = document.createElement('video');
@@ -202,4 +204,54 @@ export function captureVideoFrame(file) {
       reject(new Error('视频读取失败，确认一下是不是标准的mp4格式'));
     };
   });
+}
+
+// ------- 视频加水印（用 ffmpeg.wasm 逐帧重新编码，比图片水印重得多，处理会比较慢） -------
+// 注意：这部分依赖浏览器加载 ffmpeg.wasm 这个库（约20-30MB）+ 一个字体文件，
+// 第一次用之前没有实际浏览器环境测过，如果加载/编码报错，把报错信息发回来，照着错误信息调整
+let ffmpegInstance = null;
+async function getFFmpeg() {
+  if (ffmpegInstance) return ffmpegInstance;
+  const ffmpeg = new FFmpeg();
+  const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+    wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+  });
+  ffmpegInstance = ffmpeg;
+  return ffmpeg;
+}
+
+// 给视频本身加水印：文字用英文（"TUTU STUDIO"），不用中文——
+// 因为ffmpeg.wasm不认系统字体，要显式打包一个字体文件进去，中文字体体积比英文字体大得多，
+// 先用英文控制体积和处理时间，以后需要中文水印可以再换成中文字体（体积会明显变大）
+export async function watermarkVideo(file, onProgress) {
+  const ffmpeg = await getFFmpeg();
+
+  if (onProgress) {
+    ffmpeg.on('progress', ({ progress }) => {
+      onProgress(Math.min(99, Math.max(0, Math.round(progress * 100))));
+    });
+  }
+
+  await ffmpeg.writeFile('input.mp4', await fetchFile(file));
+
+  // drawtext滤镜需要显式指定字体文件，这里用一个开源的西文字体
+  const fontData = await fetchFile('https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Bold.ttf');
+  await ffmpeg.writeFile('font.ttf', fontData);
+
+  // 2x2网格平铺水印文字，半透明白色（跟图片水印的"多处平铺"思路一致，只是没做旋转/自适应颜色，先保证能用）
+  const drawText = (x, y) =>
+    `drawtext=text='TUTU STUDIO':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
+  const filter = [
+    drawText('w*0.08', 'h*0.15'),
+    drawText('w*0.55', 'h*0.15'),
+    drawText('w*0.08', 'h*0.55'),
+    drawText('w*0.55', 'h*0.55'),
+  ].join(',');
+
+  await ffmpeg.exec(['-i', 'input.mp4', '-vf', filter, '-c:a', 'copy', 'output.mp4']);
+
+  const data = await ffmpeg.readFile('output.mp4');
+  return new Blob([data.buffer], { type: 'video/mp4' });
 }

@@ -295,6 +295,9 @@ function openLightbox(list, index){
     if (posterUrl) video.poster = posterUrl;
     video.controls = true;
     video.playsInline = true;
+    video.controlsList = 'nodownload noremoteplayback';
+    video.disablePictureInPicture = true;
+    video.oncontextmenu = () => false;
     video.style.cssText = 'max-width:100%; max-height:76vh; width:auto; height:auto; display:block; margin:0 auto; border-radius:4px;';
     lightboxScrollBox.appendChild(video);
 
