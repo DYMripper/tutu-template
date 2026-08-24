@@ -242,8 +242,8 @@ export async function watermarkVideo(file, onProgress) {
 
   await ffmpeg.writeFile('input.mp4', await fetchFile(file));
 
-  // drawtext滤镜需要显式指定字体文件，这里用一个开源的西文字体
-  const fontData = await fetchFile('https://cdn.jsdelivr.net/gh/googlefonts/roboto@main/src/hinted/Roboto-Bold.ttf');
+  // drawtext滤镜需要显式指定字体文件——放在你自己网站根目录的font.ttf，不依赖猜第三方CDN地址（之前猜错过两次）
+  const fontData = await fetchFile('https://tutu.dymripper.com/font.ttf');
   await ffmpeg.writeFile('font.ttf', fontData);
 
   // 2x2网格平铺水印文字，半透明白色（跟图片水印的"多处平铺"思路一致，只是没做旋转/自适应颜色，先保证能用）
