@@ -217,6 +217,9 @@ async function getFFmpeg() {
   await ffmpeg.load({
     coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
     wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    // ffmpeg.wasm自己内部还要建一个Worker，这个Worker脚本默认指向esm.sh（跨域），
+    // 浏览器不允许直接用跨域地址建Worker，同样转成本地blob地址才能用
+    classWorkerURL: await toBlobURL('https://esm.sh/@ffmpeg/ffmpeg@0.12.10/es2022/worker.js', 'text/javascript'),
   });
   ffmpegInstance = ffmpeg;
   return ffmpeg;
