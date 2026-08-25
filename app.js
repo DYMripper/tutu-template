@@ -357,6 +357,13 @@ function openLightbox(list, index){
 function closeLightbox(){
   lightbox.classList.remove('show');
   document.body.style.overflow = '';
+  // 关闭时把视频停掉、清空弹窗内容，不然视频会在后台继续播放、听得到声音但看不到画面
+  const video = lightboxScrollBox.querySelector('video');
+  if (video) {
+    video.pause();
+    video.src = '';
+  }
+  lightboxScrollBox.innerHTML = '';
 }
 
 // G. 左右切换：在当前列表里往前/往后挪一位，翻到头/尾自动循环
