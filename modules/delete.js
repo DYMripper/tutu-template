@@ -1,5 +1,5 @@
 // ------- "删除模板"面板（含内联编辑） -------
-import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex } from '../core.js';
+import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, captureVideoFrame } from '../core.js';
 
 const deleteCatSelect = document.getElementById('deleteCatSelect');
 const deleteList = document.getElementById('deleteList');
@@ -114,8 +114,14 @@ function toggleEditForm(categoryKey, item, rowEl) {
         </div>
       </div>
     </div>
-    <label style="margin:0;">替换图片（只能选一张，不选就保持原图不变）</label>
+    <label style="margin:0;">替换封面图（只能选一张，不选就保持原图不变）</label>
     <input type="file" class="editFiles" accept="image/*">
+    ${
+      item.type === 'video'
+        ? `<label style="margin:0;">替换视频文件（.mp4，不选就保持原视频不变；如果只换了封面没选视频，视频保持原样）</label>
+           <input type="file" class="editVideoFile" accept="video/mp4">`
+        : ''
+    }
     <div style="display:flex; gap:10px; margin-top:4px;">
       <button class="primary editSaveBtn" style="margin:0;">保存</button>
       <button class="link editCancelBtn">取消</button>
@@ -138,13 +144,33 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
   const newRatio = form.querySelector('.editRatio').value;
   const newColor = combineColorHex(form.querySelector('.editColor').value, form.querySelector('.editColorAlpha').value);
   const newFiles = form.querySelector('.editFiles').files;
+  const editVideoFileInput = form.querySelector('.editVideoFile');
+  const newVideoFile = editVideoFileInput && editVideoFileInput.files.length > 0 ? editVideoFileInput.files[0] : null;
 
   saveBtn.disabled = true;
   statusEl.textContent = '';
   try {
     let newImages = [];
+    let newVideoUrl = undefined;
+
+    if (newVideoFile) {
+      // 换了视频文件本身：原样上传视频，如果操作者没有额外单独选封面图，就用新视频的第一帧自动生成一张新封面
+      statusEl.textContent = '正在上传新视频…';
+      const videoHash = await hashBlob(newVideoFile);
+      const videoKey = `Templates/${categoryKey}/${newCode || item.code}-${videoHash}.mp4`;
+      newVideoUrl = await uploadToWorker(videoKey, newVideoFile);
+
+      if (newFiles.length === 0) {
+        statusEl.textContent = '正在从新视频截取封面…';
+        const posterBlob = await captureVideoFrame(newVideoFile);
+        const posterHash = await hashBlob(posterBlob);
+        const posterKey = `Templates/${categoryKey}/${newCode || item.code}-${posterHash}.jpg`;
+        newImages.push(await uploadToWorker(posterKey, posterBlob));
+      }
+    }
+
     if (newFiles.length > 0) {
-      statusEl.textContent = '正在上传新图片…';
+      statusEl.textContent = '正在上传新封面图…';
       for (let i = 0; i < newFiles.length; i++) {
         const file = newFiles[i];
         const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
@@ -166,6 +192,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
         color: newColor,
         ratio: newRatio,
         newImages: newImages.length > 0 ? newImages : undefined,
+        newVideo: newVideoUrl,
       }),
     });
     const data = await res.json();
