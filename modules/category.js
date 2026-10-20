@@ -18,6 +18,7 @@ export function refreshCategoryManage() {
       <button class="link catSaveNameBtn">保存名称</button>
       <button class="link catCoverBtn">更换封面</button>
       <input type="file" class="catCoverInput" accept="image/*" style="display:none;">
+      <button class="link catDelBtn" style="color:#c0392b;">删除分类</button>
     `;
     row.querySelector('.catUpBtn').addEventListener('click', () => moveCategory(idx, -1));
     row.querySelector('.catDownBtn').addEventListener('click', () => moveCategory(idx, 1));
@@ -26,8 +27,41 @@ export function refreshCategoryManage() {
     );
     row.querySelector('.catCoverBtn').addEventListener('click', () => row.querySelector('.catCoverInput').click());
     row.querySelector('.catCoverInput').addEventListener('change', (e) => handleCoverChange(c.key, e.target.files[0], row));
+    row.querySelector('.catDelBtn').addEventListener('click', () => deleteCategory(c, row));
     container.appendChild(row);
   });
+}
+
+async function deleteCategory(cat, rowEl) {
+  const count = (cat.items || []).length;
+  const typed = prompt(
+    `⚠️ 即将删除分类「${cat.name}」\n\n` +
+    `该分类下的 ${count} 个模板，以及它们的所有图片/视频、分类封面都会被永久删除，无法恢复！\n\n` +
+    `如果确定要删除，请在下面输入分类名称：${cat.name}`
+  );
+  if (typed === null) return;
+  if (typed.trim() !== cat.name) {
+    alert('输入的名称不一致，已取消删除。');
+    return;
+  }
+  const btn = rowEl.querySelector('.catDelBtn');
+  btn.textContent = '删除中…';
+  btn.disabled = true;
+  try {
+    const res = await fetch(API_BASE + '/deletecat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-Admin-Token': session.token },
+      body: JSON.stringify({ categoryKey: cat.key, confirmName: typed.trim() }),
+    });
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.message || '删除失败');
+    alert(`已删除分类「${cat.name}」：${data.removedItems} 个模板、${data.removedFiles} 个文件。`);
+    document.dispatchEvent(new CustomEvent('tutu:refresh'));
+  } catch (err) {
+    alert('删除分类失败：' + err.message);
+    btn.textContent = '删除分类';
+    btn.disabled = false;
+  }
 }
 
 async function moveCategory(idx, delta) {
