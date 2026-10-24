@@ -51,28 +51,51 @@ document.getElementById('year').textContent = new Date().getFullYear();
 /* -------------------------------------------------------------
  * 高性能 IntersectionObserver 图片视口懒加载逻辑
  * ------------------------------------------------------------- */
+// 列表页用的图：优先用上传时生成的小缩略图(thumb)，没有就退回原图
+function thumbOf(item){
+  if (item.thumb) return item.thumb;
+  return (Array.isArray(item.image) && item.image.length > 0) ? item.image[0] : null;
+}
+
+// 下载队列：同一时间最多只下 6 张，其余排队；已经被切走（不在页面上了）的图直接跳过不下载
+const LOAD_CONCURRENCY = 6;
+let activeLoads = 0;
+const loadQueue = [];
+
+function pumpQueue(){
+  while (activeLoads < LOAD_CONCURRENCY && loadQueue.length > 0) {
+    const { thumbDiv, url } = loadQueue.shift();
+    if (!thumbDiv.isConnected) continue;
+    activeLoads++;
+    const img = new Image();
+    const finish = () => { activeLoads--; pumpQueue(); };
+    img.onload = () => {
+      thumbDiv.style.backgroundImage = `url('${url}')`;
+      thumbDiv.classList.add('lazy-loaded');
+      finish();
+    };
+    img.onerror = () => {
+      thumbDiv.style.backgroundColor = "var(--line)";
+      finish();
+    };
+    img.src = url;
+  }
+}
+
 const lazyImageObserver = new IntersectionObserver((entries, observer) => {
   entries.forEach(entry => {
     if (entry.isIntersecting) {
       const thumbDiv = entry.target;
       const trueImgUrl = thumbDiv.getAttribute('data-bg');
-
       if (trueImgUrl) {
-        const img = new Image();
-        img.src = trueImgUrl;
-        img.onload = () => {
-          thumbDiv.style.backgroundImage = `url('${trueImgUrl}')`;
-          thumbDiv.classList.add('lazy-loaded');
-        };
-        img.onerror = () => {
-          thumbDiv.style.backgroundColor = "var(--line)";
-        };
+        loadQueue.push({ thumbDiv, url: trueImgUrl });
+        pumpQueue();
       }
       observer.unobserve(thumbDiv);
     }
   });
 }, {
-  rootMargin: "0px 0px 500px 0px"
+  rootMargin: "200px 0px 200px 0px" // 离屏幕上下 200px 以内才开始加载（原来是下方 500px）
 });
 
 /* -------------------------------------------------------------
@@ -162,7 +185,7 @@ function openCategory(key){
     card.setAttribute('aria-label', `放大查看 ${item.code}`);
 
     const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
-    const firstImg = (Array.isArray(item.image) && item.image.length > 0) ? item.image[0] : null;
+    const firstImg = thumbOf(item);
 
     card.innerHTML = `
       <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
@@ -226,7 +249,7 @@ searchInput.addEventListener('input', (e) => {
         card.className = 'poster-card';
 
         const itemRatioStyle = item.ratio ? `aspect-ratio:${item.ratio};` : `aspect-ratio:3/4;`;
-        const firstImg = (Array.isArray(item.image) && item.image.length > 0) ? item.image[0] : null;
+        const firstImg = thumbOf(item);
 
         card.innerHTML = `
           <div class="poster-thumb" data-bg="${firstImg || ''}" style="${firstImg ? '' : 'background:'+item.color}; ${itemRatioStyle}">
@@ -291,6 +314,7 @@ function openLightbox(list, index){
   if (item.type === 'video' && item.video) {
     const posterUrl = Array.isArray(item.image) ? item.image[0] : item.image;
     const video = document.createElement('video');
+    video.preload = 'metadata'; // 只先读视频的基本信息，点播放才开始下载
     video.src = item.video;
     if (posterUrl) video.poster = posterUrl;
     video.controls = true;

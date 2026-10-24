@@ -297,6 +297,49 @@ export function compressImage(
 }
 
 // ==============================
+// 缩略图（列表页用的小图）
+// 把"已经带水印的成品图"等比缩小到最长边 maxDim 像素，统一输出 JPEG。
+// 不再叠加水印（成品图上已有，缩小后水印一起缩小）。失败时返回 null，调用方自行跳过。
+// ==============================
+export function makeThumbnail(blob, maxDim = 480, quality = 0.78) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(blob);
+
+    img.onload = () => {
+      const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+      const w = Math.max(1, Math.round(img.width * scale));
+      const h = Math.max(1, Math.round(img.height * scale));
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff'; // PNG透明区域转JPEG会变黑，先垫白底
+      ctx.fillRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+
+      canvas.toBlob(
+        (out) => {
+          URL.revokeObjectURL(url);
+          resolve(out);
+        },
+        'image/jpeg',
+        quality
+      );
+    };
+
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+
+    img.src = url;
+  });
+}
+
+// ==============================
 // 上传到 Worker
 // ==============================
 export async function uploadToWorker(

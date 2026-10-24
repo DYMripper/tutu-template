@@ -11,7 +11,8 @@ import {
   splitColorHex,
   levenshtein,
   captureVideoFrame,
-  watermarkVideoTest
+  watermarkVideoTest,
+  makeThumbnail
 } from '../core.js';
 
 const catSelect =
@@ -673,6 +674,40 @@ async function handleSubmit() {
         );
 
 
+        // 列表页专用的小缩略图（失败就跳过，不影响上传）
+        let posterThumbUrl = null;
+
+        const posterThumbBlob =
+          await makeThumbnail(
+            posterBlob
+          );
+
+        if (posterThumbBlob) {
+
+          const thumbHash =
+            await hashBlob(
+              posterThumbBlob
+            );
+
+          const thumbKey =
+            `Templates/${categoryKey}/${manualPrefix}-${intPart}-${thumbHash}_t.jpg`;
+
+          posterThumbUrl =
+            await uploadToWorker(
+              thumbKey,
+              posterThumbBlob
+            );
+
+          uploadedKeysThisAttempt.push(
+            thumbKey
+          );
+
+          console.log(
+            `[${current}/${parsedFiles.length}] 小缩略图上传完成: ${posterThumbUrl} (${posterThumbBlob.size} bytes)`
+          );
+        }
+
+
         // ----------------------------------------------------
         // 2. FFmpeg 视频水印
         // ----------------------------------------------------
@@ -839,6 +874,10 @@ async function handleSubmit() {
           video:
             videoUrl,
 
+          thumb:
+            posterThumbUrl ||
+            undefined,
+
           color,
 
           ratio
@@ -929,12 +968,50 @@ async function handleSubmit() {
         );
 
 
+        // 列表页专用的小缩略图（失败就跳过，不影响上传）
+        let thumbUrl = null;
+
+        const thumbBlob =
+          await makeThumbnail(
+            toUpload
+          );
+
+        if (thumbBlob) {
+
+          const thumbHash =
+            await hashBlob(
+              thumbBlob
+            );
+
+          const thumbKey =
+            `Templates/${categoryKey}/${manualPrefix}-${intPart}-${thumbHash}_t.jpg`;
+
+          thumbUrl =
+            await uploadToWorker(
+              thumbKey,
+              thumbBlob
+            );
+
+          uploadedKeysThisAttempt.push(
+            thumbKey
+          );
+
+          console.log(
+            `[${current}/${parsedFiles.length}] 小缩略图上传完成: ${thumbUrl} (${thumbBlob.size} bytes)`
+          );
+        }
+
+
         items.push({
           code,
 
           images: [
             imageUrl
           ],
+
+          thumb:
+            thumbUrl ||
+            undefined,
 
           color,
 

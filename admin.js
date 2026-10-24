@@ -2,6 +2,7 @@
 import { API_BASE, DATA_JSON_URL, session, state } from './core.js';
 import { initUpload, refreshUploadPanel } from './modules/upload.js';
 import { initDelete, refreshDeletePanel } from './modules/delete.js';
+import { initBackfill } from './modules/backfill.js';
 import { initCategoryManage, refreshCategoryManage } from './modules/category.js';
 
 // ---- 登录门禁 ----
@@ -81,4 +82,5 @@ document.addEventListener('tutu:refresh', loadCategories);
 initUpload();
 initDelete();
 initCategoryManage();
+initBackfill();
 tabUpload.click(); // 默认打开"新增"这个标签页

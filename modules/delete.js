@@ -1,5 +1,5 @@
 // ------- "删除模板"面板（含内联编辑） -------
-import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, captureVideoFrame } from '../core.js';
+import { API_BASE, session, state, compressImage, uploadToWorker, hashBlob, combineColorHex, splitColorHex, captureVideoFrame, makeThumbnail } from '../core.js';
 
 const deleteCatSelect = document.getElementById('deleteCatSelect');
 const deleteList = document.getElementById('deleteList');
@@ -63,7 +63,7 @@ function renderDeleteList() {
     const row = document.createElement('div');
     row.className = 'deleteRow';
     row.style.cssText = 'display:flex; align-items:center; gap:12px; border:1px solid var(--line); border-radius:6px; padding:8px 10px;';
-    const firstImg = Array.isArray(item.image) ? item.image[0] : item.image;
+    const firstImg = item.thumb || (Array.isArray(item.image) ? item.image[0] : item.image); // 后台列表也优先用小缩略图
     const thumbHtml = firstImg
       ? `<img src="${firstImg}" loading="lazy" style="width:44px;height:44px;object-fit:cover;border-radius:4px;flex-shrink:0;">`
       : `<div style="width:44px;height:44px;border-radius:4px;background:${item.color || '#ccc'};flex-shrink:0;"></div>`;
@@ -152,6 +152,16 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
   try {
     let newImages = [];
     let newVideoUrl = undefined;
+    let newThumbUrl = undefined;
+
+    // 把一张已带水印的成品图缩成小图并上传，返回地址（失败返回undefined，不影响保存）
+    const uploadThumb = async (blob) => {
+      const thumbBlob = await makeThumbnail(blob);
+      if (!thumbBlob) return undefined;
+      const thumbHash = await hashBlob(thumbBlob);
+      const thumbKey = `Templates/${categoryKey}/${newCode || item.code}-${thumbHash}_t.jpg`;
+      return await uploadToWorker(thumbKey, thumbBlob);
+    };
 
     if (newVideoFile) {
       // 换了视频文件本身：原样上传视频，如果操作者没有额外单独选封面图，就用新视频的第一帧自动生成一张新封面
@@ -166,6 +176,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
         const posterHash = await hashBlob(posterBlob);
         const posterKey = `Templates/${categoryKey}/${newCode || item.code}-${posterHash}.jpg`;
         newImages.push(await uploadToWorker(posterKey, posterBlob));
+        newThumbUrl = await uploadThumb(posterBlob);
       }
     }
 
@@ -178,6 +189,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
         const hash = await hashBlob(toUpload);
         const key = `Templates/${categoryKey}/${newCode || item.code}-${hash}.${ext}`;
         newImages.push(await uploadToWorker(key, toUpload));
+        if (i === 0) newThumbUrl = await uploadThumb(toUpload); // 列表页只用第一张的小图
       }
     }
 
@@ -193,6 +205,7 @@ async function saveEditForm(categoryKey, item, form, rowEl) {
         ratio: newRatio,
         newImages: newImages.length > 0 ? newImages : undefined,
         newVideo: newVideoUrl,
+        newThumb: newThumbUrl,
       }),
     });
     const data = await res.json();
