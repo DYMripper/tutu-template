@@ -3,8 +3,22 @@
 // ==============================
 // FFmpeg
 // ==============================
-import { FFmpeg } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js';
-import { toBlobURL, fetchFile } from 'https://cdn.jsdelivr.net/npm/@ffmpeg/util@0.12.1/dist/esm/index.js';
+// 注意：这里不再用 import 从 CDN 加载任何东西。
+// 之前这两行是静态 import，国内个别网络连不上 jsdelivr 时，整个后台的 JS 都加载不了，登录按钮会点了没反应。
+// 现在只有"上传视频加水印"那一步才会去下载 ffmpeg 核心文件，其他功能完全不依赖外部 CDN。
+
+// 下载一个文件并转成 blob: 地址（代替 @ffmpeg/util 的 toBlobURL）
+async function toBlobURL(url, mimeType) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('下载失败 HTTP ' + res.status + '：' + url);
+  const buf = await res.arrayBuffer();
+  return URL.createObjectURL(new Blob([buf], { type: mimeType }));
+}
+
+// 读取 File/Blob 为 Uint8Array（代替 @ffmpeg/util 的 fetchFile）
+async function fetchFile(file) {
+  return new Uint8Array(await file.arrayBuffer());
+}
 
 // ==============================
 // API 配置
@@ -695,8 +709,9 @@ async function getFFmpeg() {
     '[水印测试] 1a/6 正在下载 ffmpeg-core.js…'
   );
 
+  // ffmpeg核心文件放在自己的R2里（国内连不上jsdelivr），由Worker通过自己的域名提供
   const baseURL =
-    'https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd';
+    `${API_BASE}/ffmpeg`;
 
   const coreURL =
     await toBlobURL(
