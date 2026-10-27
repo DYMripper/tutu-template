@@ -779,6 +779,30 @@ async function getFFmpeg() {
 // ============================================================
 // 视频水印测试
 // ============================================================
+// 读取视频的实际宽高（浏览器读到的是"显示方向"的尺寸，跟 ffmpeg 自动旋转后的画面一致）
+function getVideoSize(file) {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(file);
+    video.preload = 'metadata';
+    video.muted = true;
+    video.onloadedmetadata = () => {
+      const size = { width: video.videoWidth, height: video.videoHeight };
+      URL.revokeObjectURL(url);
+      if (!size.width || !size.height) {
+        reject(new Error('读取视频尺寸失败'));
+        return;
+      }
+      resolve(size);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('读取视频尺寸失败，确认是标准的mp4格式'));
+    };
+    video.src = url;
+  });
+}
+
 export async function watermarkVideoTest(
   file,
   onProgress
@@ -935,31 +959,37 @@ export async function watermarkVideoTest(
   // drawtext
   // ==========================================================
 
+  // ==========================================================
+  // 水印排版：按视频实际宽高计算，不再写死比例
+  // 之前字号固定是画面高度的 1/18，竖屏视频又高又窄，
+  // 一行字比半个屏幕还宽，左右两列就叠在一起了。
+  // 现在：字号取 宽度/20 和 高度/18 里较小的那个，
+  //      一行文字就占一整行、水平居中，竖着排几行，永远不会左右重叠。
+  // ==========================================================
+
+  const { width: vw, height: vh } = await getVideoSize(file);
+  const fontSize = Math.max(
+    12,
+    Math.round(Math.min(vw / 20, vh / 18))
+  );
+
+  console.log(
+    '[水印测试] 视频尺寸:',
+    vw,
+    'x',
+    vh,
+    '字号:',
+    fontSize
+  );
+
   const drawText =
-    (x, y) =>
-      `drawtext=text='TUTU STUDIO   荼荼工作室   防盗预览':fontfile=font.ttf:fontcolor=white@0.28:fontsize=h/18:x=${x}:y=${y}`;
+    (yRatio) =>
+      `drawtext=text='TUTU STUDIO   荼荼工作室   防盗预览':fontfile=font.ttf:fontcolor=white@0.28:fontsize=${fontSize}:x=(w-text_w)/2:y=h*${yRatio}`;
 
-  const filter = [
-    drawText(
-      'w*0.08',
-      'h*0.15'
-    ),
-
-    drawText(
-      'w*0.55',
-      'h*0.15'
-    ),
-
-    drawText(
-      'w*0.08',
-      'h*0.55'
-    ),
-
-    drawText(
-      'w*0.55',
-      'h*0.55'
-    )
-  ].join(',');
+  // 从上到下均匀排 6 行
+  const filter = [0.1, 0.26, 0.42, 0.58, 0.74, 0.9]
+    .map(drawText)
+    .join(',');
 
   console.log(
     '[水印测试] FFmpeg filter:',
